@@ -475,6 +475,6 @@ function updateCodeOutput() {
         DOM.divCodeOutput.textContent = appState.fileContents.map(fc => `********** ${fc.path} **********\n${fc.content}\n---`).join('\n');
     } else {
         const file = appState.fileContents.find(fc => fc.path === selectedFile);
-        DOM.divCodeOutput.textContent = file ? `********** ${fc.path} **********\n${fc.content}` : 'File not found.';
+        DOM.divCodeOutput.textContent = file ? `********** ${file.path} **********\n${file.content}` : 'File not found.';
     }
 }
