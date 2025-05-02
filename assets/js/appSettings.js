@@ -5,8 +5,8 @@ export const appSettings = { //** works as a named export as a mutable object; u
     HEADERS: {
         'Accept': 'application/vnd.github.v3+json'
     },
-    DEFAULT_FULL_PATHS: true,
-    DEFAULT_FILTER_EXTENSIONS: false,
+    DEFAULT_FULL_PATHS: false,
+    DEFAULT_FILTER_EXTENSIONS: true,
     DEFAULT_PROFILE_INDEX: 0,
     DEFAULT_FILE_TYPE: '.html',
     fileTypes: ['.html', '.js', '.css', '.json'],
@@ -52,6 +52,19 @@ export const appSettings = { //** works as a named export as a mutable object; u
                 '.git/',
                 '.gitignore',
                 'favicon.ico'
+            ],
+            extensionsToFilter: ['.md', '.jpg', '.jpeg', '.png', '.svg', '.eot', '.ttf', '.woff', '.woff2']
+        },
+        {
+            OWNER: 'lecespedes',
+            REPO: 'GITHUBUTILITY',
+            BRANCH: 'main',
+            root: null,
+            EXCLUDE: [
+                '.git/',
+                '.gitignore',
+                'favicon.ico',
+                'Versions/'
             ],
             extensionsToFilter: ['.md', '.jpg', '.jpeg', '.png', '.svg', '.eot', '.ttf', '.woff', '.woff2']
         }
