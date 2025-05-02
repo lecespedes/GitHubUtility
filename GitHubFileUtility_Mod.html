@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub File Utility</title>
+    <link rel="icon" type="image/x-icon" href="#">
+    <link href=/assets/css/GitHubFileUtility.css rel=stylesheet>
+</head>
+<body>
+  <div class="page-wrapper">
+    <header class="main-header">
+      <div class="title-group">
+        <h1>GitHub File Utility</h1>
+      </div>
+      <nav class="navbar">
+        <button id="load-files-directory">Load Files & Directory</button>
+        <button id="load-code">Load Code</button>
+        <button id="clear-cache">Clear Cache</button>
+      </nav>
+    </header>
+    <section class="content">
+      <div id="cache-message" class="success">cache cleared</div>
+      <div class="controls">
+        <div class="profile-select">
+          <label for="profile">Profile: </label>
+          <select id="profile"></select>
+          <a id="github-link" href="#" target="_blank">View on GitHub</a>
+        </div>
+        <div class="custom-root">
+          <label for="custom-root">Custom Root: </label>
+          <input type="text" id="custom-root" placeholder="optional">
+        </div>
+      </div>
+      <div id="loading" style="display: none;">Loading...</div>
+      <div id="error"></div>
+      <div id="result"></div>
+      <div class="tab-control">
+        <div class="tab-group">
+          <div id="tab-file-list" class="tab-ctrl-btn tab-ctrl-main active" data-tab="file-list">File List</div>
+          <div id="tab-directory-structure" class="tab-ctrl-btn tab-ctrl-main" data-tab="directory-structure">Directory Structure</div>
+          <div id="tab-code" class="tab-ctrl-btn tab-ctrl-main" data-tab="code">Code</div>
+          <div id="tab-cache" class="tab-ctrl-btn tab-ctrl-main" data-tab="cache">Cache</div>
+          <div id="tab-settings" class="tab-ctrl-btn tab-ctrl-main" data-tab="settings">Settings</div>
+        </div>
+        <span id="rate-limit-info"></span>
+      </div>
+      <div id="file-list-panel" class="tab-content tab-ctrl-main active">
+        <div class="panel-header">
+          <div class="file-list-info">
+            <label id="filter-checkbox-label">
+              <input type="checkbox" id="filter-extensions">
+              <b>Filter files</b> (<span id="filter-types"></span>)
+            </label>
+          </div>
+          <div class="tab-buttons">
+            <button id="file-list-copy" class="tab-button">Copy Paths</button>
+            <button id="file-list-save" class="tab-button">Save as JSON</button>
+          </div>
+        </div>
+        <div id="file-list-output" class="output"></div>
+      </div>
+      <div id="directory-structure-panel" class="tab-content tab-ctrl-main">
+        <div class="panel-header">
+          <div class="directory-structure-info">
+            <label id="full-paths-label">
+              <input type="checkbox" id="full-paths">
+              <b>Full Paths</b>
+            </label> | 
+            <b>Excluded Paths:</b> <span id="excluded-paths"></span>
+          </div>
+          <div class="tab-buttons">
+            <button id="json-viewer-button" class="tab-button">Open JSON Viewer</button>
+            <button id="directory-copy" class="tab-button">Copy Paths</button>
+            <button id="directory-save" class="tab-button">Save as JSON</button>
+          </div>
+        </div>
+        <div id="directory-structure-output" class="output"></div>
+      </div>
+      <div id="code-panel" class="tab-content tab-ctrl-main">
+        <div class="panel-header">
+          <div class="code-info">
+            <label id="file-type-label">
+              File Type:
+              <select id="file-type"></select>
+            </label>
+          </div>
+          <div class="tab-buttons">
+            <button id="code-copy" class="tab-button">Copy</button>
+          </div>
+        </div>
+        <div class="code-panel-container">
+          <select id="file-list" size="10"></select>
+          <div id="code-output" class="output"></div>
+        </div>
+      </div>
+      <div id="cache-panel" class="tab-content tab-ctrl-main">
+        <div class="panel-header">
+          <div class="cache-info"><span id="cache-summary"></span></div>
+          <div class="tab-buttons"></div>
+        </div>
+        <div id="cache-output" class="output"></div>
+      </div>
+      <div id="settings-panel" class="tab-content tab-ctrl-main">
+        <div class="panel-header">
+          <div class="settings-info"></div>
+          <div class="tab-buttons"></div>
+        </div>
+        <div id="settings-output" class="output"></div>
+      </div>
+    </section>
+  </div>
+  <script src="assets/js/app.js" type="module"></script>
+</body>
+</html>
