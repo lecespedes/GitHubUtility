@@ -1,60 +1,224 @@
+// File: appFunctions.js
+
+/**
+ * Module-level state for application settings, state, and DOM elements.
+ * @module appFunctions
+ */
 let appState = null;
 let appSettings = null;
 let DOM = null;
 
+import { getCacheManager } from './cacheManager.js';
+// Initialize cache manager with appState
+const cacheMan = getCacheManager(appState);
+/**
+ * Initializes and returns application functions with provided settings, state, and DOM.
+ * @param {Object} settings - Application settings (e.g., API_BASE, profiles).
+ * @param {Object} state - Application state (e.g., activeProfile, fileContents).
+ * @param {Object} dom - DOM elements for UI interaction.
+ * @returns {Object} Object containing application functions.
+ * Used in `appController.js` to initialize functions.
+ */
 export function getAppFunctions(settings, state, dom) {
     appSettings = settings;
     appState = state;
     DOM = dom;
     return {
-        DisplayPathsAndDirectory,
+        LoadPaths,
         DisplayFileContent,
-        clearCache,
         createJsonBlobUrl,
         copyPathsToClipboard,
         savePathsAsJson,
-        updateDirectoryFromCache,
         handleProfileChange,
         updateCodeOutput,
-        updateUI,
-        migrateCache
+        getFilePanel,
+        getDirectoryPanel,
+        DisplayPopUp
     };
 }
-//export function setUIFuncDOM(dom) {
-//    DOM = dom;
-//}
-async function fetchFileContent(path) {
-    console.log(`Entering fetchFileContent: ${path}`);
-    const profileKey = appState.activeProfileIndex;
-    const cacheKey = `GitFiles:${path}`;
-    const cached = getCache(cacheKey);
-    if (cached) {
-        console.log(`Returning cached content for: ${cacheKey}_${profileKey}`);
-        return cached.content;
+ /**
+     * Returns formatted content for the File List panel from cache.
+     * @returns {string} Formatted paths or default message if cache is empty.
+     * Used in `config.divs` for `divFileListOutput`.
+     */
+ function getFilePanel() {
+    console.log('Entering getFilePanel');
+    const cachedPaths = cacheMan.getCachePaths();
+    if (!cachedPaths) {
+        return 'Click <Load Files & Directory> to load the data.';
     }
     try {
-        console.log(`Fetching content for: ${path}, profile: ${appState.activeSettings.OWNER}/${appState.activeSettings.REPO}/${appState.activeSettings.BRANCH}`);
-        const contentUrl = `${appSettings.API_BASE}/repos/${appState.activeSettings.OWNER}/${appState.activeSettings.REPO}/contents/${path}?ref=${appState.activeSettings.BRANCH}`;
-        const response = await fetch(contentUrl, { headers: appSettings.HEADERS });
-        appState.rateLimitRemaining = parseInt(response.headers.get('X-RateLimit-Remaining') || '60');
-        appState.rateLimitResetDate = parseInt(response.headers.get('X-RateLimit-Reset') || '0') ? 
+        const paths = Array.isArray(cachedPaths) ? cachedPaths : cachedPaths.paths;
+        let filteredPaths = paths;
+        if (DOM.ckbFilterExtensions.checked) {
+            filteredPaths = paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
+        }
+        DOM.divResult.textContent = `${filteredPaths.length} items returned. ${paths.length - filteredPaths.length} items filtered out.`;
+        return filteredPaths.join('\n');
+    } catch (error) {
+        const errorMessage = `Error in Function getFilePanel: ${error.message}`;
+        console.error(errorMessage);
+        DOM.divError.textContent = errorMessage;
+        return errorMessage;
+    }
+}
+
+/**
+     * Returns formatted content for the Directory Structure panel from cache.
+     * @returns {string} Formatted directory structure or error message if cache contains errors, or default message if cache is empty.
+     * Used in `config.divs` for `divDirectoryOutput`.
+     */
+function getDirectoryPanel() {
+    console.log('Entering getDirectoryPanel');
+    const cachedPaths = cacheMan.getCachePaths();
+    if (!cachedPaths) {
+        return 'Click <Load Files & Directory> to load the data.';
+    }
+    try {
+        if (Array.isArray(cachedPaths)) {
+            return cachedPaths.join('\n');
+        }
+        let paths = cachedPaths.paths;
+        if (DOM.ckbFilterExtensions.checked) {
+            paths = paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
+        }
+        const structure = buildJsonStructure(paths, appState.activeProfile.root, DOM.ckbFullPaths.checked);
+        return JSON.stringify(structure, null, 2);
+    } catch (error) {
+        const errorMessage = `Error in Function getDirectoryPanel: ${error.message}`;
+        console.error(errorMessage);
+        DOM.divError.textContent = errorMessage;
+        return errorMessage;
+    }
+}
+
+/**
+ * Fetches and displays file contents in the Code panel.
+ * @returns {Promise<void>} No return value.
+ * Used by `btnLoadCode`, `selFileType` event listeners.
+ */
+async function DisplayFileContent() {
+    try {
+        DOM.btnLoadCode.disabled = true;
+        DOM.divCodeOutput.textContent = '';
+        DOM.selFileList.innerHTML = '';
+        appState.fileContents = [];
+        DOM.divError.textContent = '';
+        DOM.divLoading.style.display = 'block';
+
+        await LoadPaths();
+
+        const cachedPaths = cacheMan.getCachePaths();
+        if (Array.isArray(cachedPaths)) {
+            DOM.divError.textContent = cachedPaths.join('\n');
+            return; 
+        }
+        let paths = cachedPaths.paths;
+        let filteredPaths= paths;
+        if (DOM.ckbFilterExtensions.checked) {
+            filteredPaths = paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
+        }
+        filteredPaths = paths.filter(path => path.toLowerCase().endsWith(appState.selectedFileType));
+
+        const errors = [];
+        for (let i = 0; i < filteredPaths.length; i++) {
+            const path = filteredPaths[i];
+            DOM.divLoading.textContent = `Fetching file ${i + 1} of ${filteredPaths.length}`;
+            let content = cacheMan.getCacheFile(path);
+            if (!content) {
+                content = await fetchFileContent(path);
+                cacheMan.setCacheFile(path, content);
+            }
+            appState.fileContents.push({ path, content });
+            if (content.startsWith('Error')) {
+                errors.push(`Error fetching ${path}: ${content}`);
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        const allOption = document.createElement('option');
+        allOption.value = 'All';
+        allOption.textContent = 'All';
+        DOM.selFileList.appendChild(allOption);
+        filteredPaths.forEach(path => {
+            const option = document.createElement('option');
+            option.value = path;
+            option.textContent = path;
+            DOM.selFileList.appendChild(option);
+        });
+        DOM.selFileList.value = 'All';
+
+        updateCodeOutput();
+        if (errors.length > 0) {
+            DOM.divError.textContent = errors.join('\n');
+        }
+        DOM.divLoading.textContent = 'Loading...';
+        //updateCacheStatus();
+        const rateLimitElement = document.getElementById('rate-limit-info');
+        rateLimitElement.textContent = `API Limit: ${appState.apiLimit} until ${appState.apiLimitResetDate}`;
+        DOM.divResult.textContent = `${filteredPaths.length} items loaded. ${errors.length} items failed.`;
+    } catch (error) {
+        const errorMessage = `Error in Function DisplayFileContent: ${error.message}`;
+        console.error(errorMessage);
+        DOM.divCodeOutput.textContent = errorMessage;
+        DOM.divCodeOutput.style.whiteSpace = '';
+        DOM.divError.textContent = errorMessage;
+        DOM.selFileList.innerHTML = '';
+    } finally {
+        DOM.divLoading.style.display = 'none';
+        DOM.btnLoadCode.disabled = false;
+        console.log('Exiting DisplayFileContent');
+    }
+}
+/**
+ * Updates the Code panel with selected file content.
+ * @returns {void} No return value.
+ * Used by `selFileList`, `selFileType` event listeners, `DisplayFileContent`.
+ */
+function updateCodeOutput() {
+    console.log('Updating code output');
+    const selectedFile = DOM.selFileList.value;
+    if (!appState.fileContents.length) {
+        DOM.divCodeOutput.textContent = 'Click <Load Code> to load the data.';
+        DOM.divCodeOutput.style.whiteSpace = '';
+        return;
+    }
+    DOM.divCodeOutput.style.whiteSpace = 'pre';
+    if (selectedFile === 'All') {
+        DOM.divCodeOutput.textContent = appState.fileContents.map(fc => `********** ${fc.path} **********\n${fc.content}\n---`).join('\n');
+    } else {
+        const file = appState.fileContents.find(fc => fc.path === selectedFile);
+        DOM.divCodeOutput.textContent = file ? `********** ${fc.path} **********\n${fc.content}` : 'File not found.';
+    }
+}
+/**
+ * Fetches file content from GitHub API or cache.
+ * @param {string} path - File path to fetch.
+ * @returns {Promise<string>} File content or error message.
+ * Used in `DisplayFileContent`.
+ */
+async function fetchFileContent(path) {
+    console.log(`Entering fetchFileContent: ${path}`);
+    try {
+        const fileUrl = `${appSettings.API_BASE}/repos/${appState.activeProfile.OWNER}/${appState.activeProfile.REPO}/contents/${path}?ref=${appState.activeProfile.BRANCH}`;
+        const response = await fetch(fileUrl, { headers: appSettings.HEADERS });
+        appState.apiLimit = parseInt(response.headers.get('X-RateLimit-Remaining') || '60');
+        appState.apiLimitResetDate = parseInt(response.headers.get('X-RateLimit-Reset') || '0') ? 
             new Date(parseInt(response.headers.get('X-RateLimit-Reset') || '0') * 1000).toLocaleString() : 'unknown';
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             const message = errorData.message || 'Unknown';
-            console.log(`Fetch error for ${path}: ${response.status} ${response.statusText}, Message: ${message}`);
+            console.error(`Fetch error for ${path}: ${response.status} ${response.statusText}, Message: ${message}`);
             if (response.status === 404) {
                 return `Error in Function fetchFileContent: File not found: ${path}`;
-            } else if (response.status === 403 && message.includes('rate limit exceeded')) {
+            } else if (response.status === 403 && message.includes('API Limit exceeded')) {
                 const ip = message.match(/for (\d+\.\d+\.\d+\.\d+)/)?.[1] || 'unknown';
-                return `Error in Function fetchFileContent: Rate limit exceeded for IP ${ip}. Reset at ${appState.rateLimitResetDate}. Try disabling VPN/proxy.`;
+                return `Error in Function fetchFileContent: API Limit exceeded for IP ${ip}. Reset at ${appState.apiLimitResetDate}. Try disabling VPN/proxy.`;
             }
             return `Error in Function fetchFileContent: Failed to fetch file: ${response.status} ${response.statusText}. Message: ${message}`;
         }
-        const data = await response.json();
-        const content = atob(data.content);
-        console.log(`Successfully fetched and caching: ${cacheKey}_${profileKey}`);
-        setCache(cacheKey, { content, timestamp: Date.now() });
+        const fileData = await response.json();
+        const content = atob(fileData.content);
         return content;
     } catch (error) {
         console.error(`Fetch error for ${path}: ${error.message}`);
@@ -62,92 +226,109 @@ async function fetchFileContent(path) {
     }
 }
 
-async function fetchFilePaths(useFilterExtensions) {
-    console.log(`Entering fetchFilePaths, useFilterExtensions: ${useFilterExtensions}`);
-    const profileKey = appState.activeProfileIndex;
-    const cacheKey = `GitPath_${profileKey}`;
-    const cached = getCache('GitPathh');
-    let treeData;
-    if (cached) {
-        treeData = { tree: cached.map(path => ({ type: 'blob', path })) };
-    } else {
+/**
+ * Fetches file paths from GitHub API or cache.
+ * @param {boolean} useFilterExtensions - Whether to filter file extensions.
+ * @returns {Promise<{ paths: string[], unfilteredCount: number }|string[]>} Paths and unfiltered count, or error messages.
+ * Used in `DisplayFileContent`, `DisplayPathsAndDirectory`.
+ */
+async function fetchFilePaths() {
+    console.log(`Entering fetchFilePaths`);
+    //const profileKey = appState.activeProfileIndex;
+    //const cacheKey = `GitPath_${profileKey}`;
+    //const cached = getCache('GitPath');
+    //let treeData;
+    //if (cached) {
+    //    treeData = { tree: cached.map(path => ({ type: 'blob', path })) };
+    //} else {
         try {
-            const treeUrl = `${appSettings.API_BASE}/repos/${appState.activeSettings.OWNER}/${appState.activeSettings.REPO}/git/trees/${appState.activeSettings.BRANCH}?recursive=1`;
+            const treeUrl = `${appSettings.API_BASE}/repos/${appState.activeProfile.OWNER}/${appState.activeProfile.REPO}/git/trees/${appState.activeProfile.BRANCH}?recursive=1`;
             const response = await fetch(treeUrl, { headers: appSettings.HEADERS });
-            appState.rateLimitRemaining = parseInt(response.headers.get('X-RateLimit-Remaining') || '60');
-            appState.rateLimitResetDate = parseInt(response.headers.get('X-RateLimit-Reset') || '0') ? 
+            appState.apiLimit = parseInt(response.headers.get('X-RateLimit-Remaining') || '60');
+            appState.apiLimitResetDate = parseInt(response.headers.get('X-RateLimit-Reset') || '0') ? 
                 new Date(parseInt(response.headers.get('X-RateLimit-Reset') || '0') * 1000).toLocaleString() : 'unknown';
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 const message = errorData.message || 'Unknown';
                 console.error(`Fetch error: ${response.status} ${response.statusText}, Message: ${message}`);
-                if (response.status === 403 && message.includes('rate limit exceeded')) {
+                if (response.status === 403 && message.includes('API Limit exceeded')) {
                     const ip = message.match(/for (\d+\.\d+\.\d+\.\d+)/)?.[1] || 'unknown';
-                    return [`Error in Function FileFetchPaths: Rate limit exceeded for IP ${ip}. Reset at ${appState.rateLimitResetDate}. Try disabling VPN/proxy.`];
+                    return [`Error in Function FileFetchPaths: API Limit exceeded for IP ${ip}. Reset at ${appState.apiLimitResetDate}. Try disabling VPN/proxy.`];
                 }
                 return [`Error in Function FileFetchPaths: Tree fetch error: ${response.status} ${response.statusText}. Message: ${message}`];
             }
-            treeData = await response.json();
-            const rawPaths = treeData.tree
-                .filter(item => item.type == 'blob')
-                .map(item => item.path);
-            setCache('GitPath', rawPaths);
+            //treeData = await response.json();
+            const treeData = await response.json();
+            //const rawPaths = treeData.tree
+            let paths = treeData.tree
+            //    .filter(item => item.type == 'blob')
+            //    .map(item => item.path);
+            //setCache('GitPath', rawPaths);
+            .filter(item => item.type === 'blob')
+            .map(item => item.path)
+            .filter(path => !appState.activeProfile.EXCLUDE.some(exclude => path === exclude || path.startsWith(exclude)))
+            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+            //const unfilteredCount = paths.length;
+            //if (useFilterExtensions) {
+            //    paths = paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
+            //}
+            console.log(`Returning paths: ${paths.length}, unfiltered: ${unfilteredCount}`);
+            return {paths};
+            //return { paths, unfilteredCount };
         } catch (error) {
             console.error(`Fetch error: ${error.message}`);
             return [`Error in Function FileFetchPaths: ${error.message}`];
         }
-    }
-    let paths = treeData.tree
-        .filter(item => item.type === 'blob')
-        .map(item => item.path)
-        .filter(path => !appState.activeSettings.EXCLUDE.some(exclude => path === exclude || path.startsWith(exclude)))
-        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-    const unfilteredCount = paths.length;
-    if (useFilterExtensions) {
-        paths = paths.filter(path => !appState.activeSettings.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
-    }
-    console.log(`Returning paths: ${paths.length}, unfiltered: ${unfilteredCount}`);
-    return { paths, unfilteredCount };
+    //}
+    //let paths = treeData.tree
+    //    .filter(item => item.type === 'blob')
+    //    .map(item => item.path)
+    //    .filter(path => !appState.activeProfile.EXCLUDE.some(exclude => path === exclude || path.startsWith(exclude)))
+    //    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    //const unfilteredCount = paths.length;
+    //if (useFilterExtensions) {
+    //    paths = paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
+    //}
+    //console.log(`Returning paths: ${paths.length}, unfiltered: ${unfilteredCount}`);
+    //return { paths, unfilteredCount };
 }
 
-async function DisplayFilePaths(paths) {
-    console.log('Entering DisplayFilePaths');
+/**
+ * Fetches and displays file paths and directory structure in their panels.
+ * @returns {Promise<void>} No return value.
+ * Used by `btnLoadFiles` event listener.
+ */
+async function LoadPaths() {
+    console.log('Entering DisplayPathsAndDirectory');
+    DOM.btnLoadFiles.disabled = true;
     try {
-        DOM.divFileListOutput.textContent = '';
-        DOM.divError.textContent = '';
-        DOM.divFileListOutput.style.whiteSpace = 'pre';
-        DOM.divFileListOutput.textContent = JSON.stringify(paths, null, 2);
+        const cachedPaths = cacheMan.getCachePaths();
+        DisplayPopUp(cachedPaths && !Array.isArray(cachedPaths) ? 'Loading paths from cache' : 'Loading paths from GitHub');
+        let result = cachedPaths && !Array.isArray(cachedPaths) ? cachedPaths : await fetchFilePaths();
+        let paths = Array.isArray(result) ? result : result.paths;
+        if (!cachedPaths || Array.isArray(cachedPaths)) {
+            cacheMan.setCachePaths(result);
+        }
     } catch (error) {
-        const errorMessage = `Error in Function DisplayFilePaths: ${error.message}`;
+        const errorMessage = `Error in Function DisplayPathsAndDirectory: ${error.message}`;
         console.error(errorMessage);
-        DOM.divFileListOutput.textContent = errorMessage;
-        DOM.divFileListOutput.style.whiteSpace = '';
         DOM.divError.textContent = errorMessage;
-    }
-    console.log('Exiting DisplayFilePaths');
+    } 
+    DOM.btnLoadFiles.disabled = false;
+    console.log('Exiting DisplayPathsAndDirectory');
 }
 
-async function DisplayDirectory(paths) {
-    console.log('Entering DisplayDirectory');
-    try {
-        DOM.divDirectoryOutput.textContent = '';
-        DOM.divError.textContent = '';
-        const structure = buildJsonStructure(paths, appState.activeSettings.root, DOM.ckbFullPaths.checked);
-        const jsonString = JSON.stringify(structure, null, 2);
-        DOM.divDirectoryOutput.style.whiteSpace = 'pre';
-        DOM.divDirectoryOutput.textContent = jsonString;
-    } catch (error) {
-        const errorMessage = `Error in Function DisplayDirectory: ${error.message}`;
-        console.error(errorMessage);
-        DOM.divDirectoryOutput.textContent = errorMessage;
-        DOM.divDirectoryOutput.style.whiteSpace = '';
-        DOM.divError.textContent = errorMessage;
-    }
-    console.log('Exiting DisplayDirectory');
-}
-
+/**
+ * Builds a JSON structure for directory display.
+ * @param {string[]|string} paths - Array of file paths or error message.
+ * @param {string} customRoot - Custom root path for file paths.
+ * @param {boolean} useFullPaths - Whether to use full paths in the structure.
+ * @returns {Object} JSON structure representing the directory hierarchy.
+ * Used in `DisplayDirectory`.
+ */
 function buildJsonStructure(paths, customRoot, useFullPaths) {
     console.log('Building JSON structure');
+    const effectiveRoot = DOM.inpCustomRoot.value.trim() || customRoot || appState.activeProfile.REPO;
     const root = [];
     paths.forEach(path => {
         const segments = path.split('/');
@@ -162,7 +343,6 @@ function buildJsonStructure(paths, customRoot, useFullPaths) {
             current = dirObj[segment];
         }
         const fileName = segments[segments.length - 1];
-        const effectiveRoot = DOM.inpCustomRoot.value.trim() || customRoot || appSettings.REPO;
         const filePath = useFullPaths ? `${effectiveRoot}/${path}` : fileName;
         current.push(filePath);
     });
@@ -179,169 +359,15 @@ function buildJsonStructure(paths, customRoot, useFullPaths) {
         return [...dirs, ...files];
     }
     const sorted = sortStructure(root);
-    const effectiveRoot = DOM.inpCustomRoot.value.trim() || customRoot || appSettings.REPO;
     return { [effectiveRoot]: sorted };
 }
 
-function getCache(key) {
-    console.log(`Getting cache: ${key}`);
-    const profileKey = appState.activeProfileIndex;
-    const item = localStorage.getItem(`${key}_${profileKey}`);
-    return item ? JSON.parse(item) : null;
-}
-
-function setCache(key, value) {
-    const profileKey = appState.activeProfileIndex;
-    console.log(`Caching key: ${key}_${profileKey} for profile ${appState.activeSettings.OWNER}/${appState.activeSettings.REPO}/${appState.activeSettings.BRANCH}`);
-    localStorage.setItem(`${key}_${profileKey}`, JSON.stringify(value));
-}
-
-function updateCacheStatus() {
-    console.log('Updating cache status');
-    const profileKey = appState.activeProfileIndex;
-    const paths = getCache('GitPath');
-    const fileKeys = Object.keys(localStorage).filter(key => key.startsWith(`GitFiles:`) && key.endsWith(`_${profileKey}`));
-    console.log(`Updating cache status for profileKey: ${profileKey}`);
-    console.log(`All localStorage keys:`, Object.keys(localStorage));
-    console.log(`Filtered fileKeys before display:`, fileKeys);
-    let totalSize = 0;
-    if (paths) {
-        totalSize += JSON.stringify(paths).length;
-    }
-    fileKeys.forEach(key => {
-        const item = localStorage.getItem(key);
-        if (item) {
-            totalSize += item.length;
-        }
-    });
-    DOM.divCacheOutput.style.whiteSpace = 'pre';
-    DOM.divCacheOutput.textContent = [
-        'Cached Paths:',
-        paths ? JSON.stringify(paths, null, 2) : 'None',
-        '',
-        'Cached Files:',
-        fileKeys.length > 0 ? fileKeys.map(key => key.replace(`GitFiles:`, '').replace(`_${profileKey}`, '')).join('\n') : 'None'
-    ].join('\n');
-    document.getElementById('cache-summary').textContent = `Cached: ${paths ? paths.length : 0} paths, ${fileKeys.length} files, ${totalSize} bytes`;
-}
-
-function updateUI() {
-    console.log('Updating UI');
-    DOM.spnFileFilter.textContent = appState.activeSettings.extensionsToFilter.join(', ');
-    DOM.spnExcludeDirPaths.textContent = appState.activeSettings.EXCLUDE.join(', ');
-    const githubLink = document.getElementById('github-link');
-    githubLink.href = `https://github.com/${appState.activeSettings.OWNER}/${appState.activeSettings.REPO}/tree/${appState.activeSettings.BRANCH}`;
-    updateCacheStatus();
-    console.log('UI updated');
-}
-
-function migrateCache() {
-    console.log('Migrating cache');
-    Object.keys(localStorage).forEach(key => {
-        if (key.match(/GitPath_.+_.+_.+/) || key.match(/GitFiles:.+_.+_.+_.+/)) {
-            localStorage.removeItem(key);
-        }
-    });
-    DOM.divResult.textContent = 'Cache updated, please reload data.';
-    setTimeout(() => {
-        DOM.divResult.textContent = '';
-    }, 3000);
-}
-
-async function DisplayFileContent() {
-    try {
-        DOM.btnLoadCode.disabled = true;
-        DOM.divCodeOutput.textContent = '';
-        DOM.selFileList.innerHTML = '';
-        appState.fileContents = [];
-        DOM.divError.textContent = '';
-        DOM.divLoading.style.display = 'block';
-        const result = await fetchFilePaths(DOM.ckbFilterExtensions.checked);
-        let paths;
-        if (Array.isArray(result)) {
-            paths = result;
-        } else {
-            paths = result.paths;
-        }
-        console.log(`Fetched paths: ${paths.length}`);
-        const filteredPaths = paths.filter(path => path.toLowerCase().endsWith(appState.selectedFileType));
-        const errors = [];
-        for (let i = 0; i < filteredPaths.length; i++) {
-            const path = filteredPaths[i];
-            DOM.divLoading.textContent = `Fetching file ${i + 1} of ${filteredPaths.length}`;
-            const content = await fetchFileContent(path);
-            appState.fileContents.push({ path, content });
-            if (content.startsWith('Error')) {
-                errors.push(`Error fetching ${path}: ${content}`);
-            }
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        const allOption = document.createElement('option');
-        allOption.value = 'All';
-        allOption.textContent = 'All';
-        DOM.selFileList.appendChild(allOption);
-        filteredPaths.forEach(path => {
-            const option = document.createElement('option');
-            option.value = path;
-            option.textContent = path;
-            DOM.selFileList.appendChild(option);
-        });
-        DOM.selFileList.value = 'All';
-        updateCodeOutput();
-        if (errors.length > 0) {
-            DOM.divError.textContent = errors.join('\n');
-        }
-        DOM.divLoading.textContent = 'Loading...';
-        updateCacheStatus();
-        const rateLimitElement = document.getElementById('rate-limit-info');
-        rateLimitElement.textContent = `Rate limit: ${appState.rateLimitRemaining} until ${appState.rateLimitResetDate}`;
-        DOM.divResult.textContent = `${filteredPaths.length} items loaded. ${errors.length} items failed.`;
-    } catch (error) {
-        const errorMessage = `Error in Function DisplayFileContent: ${error.message}`;
-        console.error(errorMessage);
-        DOM.divCodeOutput.textContent = errorMessage;
-        DOM.divCodeOutput.style.whiteSpace = '';
-        DOM.divError.textContent = errorMessage;
-        DOM.selFileList.innerHTML = '';
-    } finally {
-        DOM.divLoading.style.display = 'none';
-        DOM.btnLoadCode.disabled = false;
-        console.log('Exiting DisplayFileContent');
-    }
-}
-
-async function DisplayPathsAndDirectory() {
-    console.log('Entering DisplayPathsAndDirectory');
-    try {
-        DOM.btnLoadFiles.disabled = true;
-        DOM.divLoading.style.display = 'block';
-        DOM.divError.textContent = '';
-        const result = await fetchFilePaths(DOM.ckbFilterExtensions.checked);
-        let paths;
-        if (Array.isArray(result)) {
-            paths = result;
-            await DisplayFilePaths(paths);
-            await DisplayDirectory(paths);
-        } else {
-            paths = result.paths;
-            await DisplayFilePaths(paths);
-            await DisplayDirectory(paths);
-            const rateLimitElement = document.getElementById('rate-limit-info');
-            rateLimitElement.textContent = `Rate limit: ${appState.rateLimitRemaining} until ${appState.rateLimitResetDate}`;
-            DOM.divResult.textContent = `${paths.length} items returned. ${result.unfilteredCount - paths.length} items filtered out.`;
-        }
-        updateCacheStatus();
-    } catch (error) {
-        const errorMessage = `Error in Function DisplayPathsAndDirectory: ${error.message}`;
-        console.error(errorMessage);
-        DOM.divError.textContent = errorMessage;
-    } finally {
-        DOM.divLoading.style.display = 'none';
-        DOM.btnLoadFiles.disabled = false;
-        console.log('Exiting DisplayPathsAndDirectory');
-    }
-}
-
+/**
+ * Creates a temporary JSON blob URL from a string.
+ * @param {string} json - JSON string to convert.
+ * @returns {string} URL for the JSON blob.
+ * Used by `btnJsonViewer` event listener.
+ */
 function createJsonBlobUrl(json) {
     console.log('Creating JSON blob URL');
     let jsonContent;
@@ -361,6 +387,12 @@ function createJsonBlobUrl(json) {
     return jsonUrl;
 }
 
+/**
+ * Copies panel content to the clipboard.
+ * @param {string} elementId - ID of the DOM element containing content.
+ * @returns {Promise<void>} No return value.
+ * Used by `fileListCopy`, `directoryCopy`, `codeCopy` event listeners.
+ */
 async function copyPathsToClipboard(elementId) {
     console.log(`Copying paths to clipboard: ${elementId}`);
     const outputElement = document.getElementById(elementId);
@@ -380,6 +412,12 @@ async function copyPathsToClipboard(elementId) {
     }
 }
 
+/**
+ * Saves panel content as a JSON file.
+ * @param {string} elementId - ID of the DOM element containing content.
+ * @returns {Promise<void>} No return value.
+ * Used by `fileListSave`, `directorySave` event listeners.
+ */
 async function savePathsAsJson(elementId) {
     console.log(`Saving paths as JSON: ${elementId}`);
     const outputElement = document.getElementById(elementId);
@@ -406,75 +444,35 @@ async function savePathsAsJson(elementId) {
     }, 3000);
 }
 
-function clearCache() {
-    console.log('Clearing cache');
-    const profileKey = appState.activeProfileIndex;
-    console.log(`Clearing cache for profileKey: ${profileKey}`);
-    Object.keys(localStorage).forEach(key => {
-        if (key.startsWith(`GitPath_${profileKey}`) || (key.startsWith(`GitFiles:`) && key.endsWith(`_${profileKey}`))) {
-            console.log(`Removing key: ${key}`);
-            localStorage.removeItem(key);
-        }
-        if (key.startsWith(`GitFiles:`) && !key.endsWith(`_${profileKey}`)) {
-            console.log(`Cleaning stale key: ${key}`);
-            localStorage.removeItem(key);
-        }
-    });
-    updateCacheStatus();
-    const cacheMessageElement = document.getElementById('cache-message');
-    cacheMessageElement.style.display = 'block';
-    setTimeout(() => {
-        cacheMessageElement.style.display = 'none';
-    }, 3000);
-}
-
-function handleProfileChange() {
-    console.log('Handling profile change');
-    const newIndex = parseInt(DOM.selProfile.value);
+/**
+ * Handles profile changes and updates UI/state.
+ * @returns {void} No return value.
+ * Used by `selProfile` event listener.
+ */
+function handleProfileChange(event) {
+    const newIndex = parseInt(event.target.value);
     if (newIndex === appState.activeProfileIndex) return;
     const newProfile = appSettings.profiles[newIndex];
     if (confirm(`Switch to profile ${newProfile.OWNER}/${newProfile.REPO}/${newProfile.BRANCH}?`)) {
         appState.activeProfileIndex = newIndex;
-        appState.activeSettings = newProfile;
-        DOM.divFileListOutput.textContent = 'Click <Load Files & Directory> to load the data.';
-        DOM.divFileListOutput.style.whiteSpace = '';
-        DOM.divDirectoryOutput.textContent = 'Click <Load Files & Directory> to load the data.';
-        DOM.divDirectoryOutput.style.whiteSpace = '';
-        DOM.divCodeOutput.textContent = 'Click <Load Code> to load the data.';
-        DOM.divCodeOutput.style.whiteSpace = '';
-        DOM.selFileList.innerHTML = '';
+        appState.activeProfile = newProfile;
         appState.fileContents = [];
-        DOM.inpCustomRoot.value = '';
-        DOM.divResult.textContent = '';
-        DOM.divError.textContent = '';
-        updateUI();
-    } else {
-        DOM.selProfile.value = appState.activeProfileIndex;
-        updateUI();
     }
 }
 
-function updateDirectoryFromCache() {
-    console.log('Updating directory from cache');
-    const cachedPaths = getCache('GitPath');
-    if (cachedPaths) {
-        DisplayDirectory(cachedPaths);
+    /**
+     * Displays a temporary popup message in the popup-message div for 3 seconds.
+     * @param {string} _message - The message to display.
+     * @returns {void} No return value.
+     * Used by `dataResult` event listener in `appController.js`.
+     */
+    function DisplayPopUp(_message) {
+        console.log('Displaying popup message:', _message);
+        DOM.divPopupMessage.textContent = _message;
+        DOM.divPopupMessage.style.display = 'block';
+        setTimeout(() => {
+            // Clear popup message after 3 seconds
+            DOM.divPopupMessage.textContent = '';
+            DOM.divPopupMessage.style.display = 'none';
+        }, 3000);
     }
-}
-
-function updateCodeOutput() {
-    console.log('Updating code output');
-    const selectedFile = DOM.selFileList.value;
-    if (!appState.fileContents.length) {
-        DOM.divCodeOutput.textContent = 'Click <Load Code> to load the data.';
-        DOM.divCodeOutput.style.whiteSpace = '';
-        return;
-    }
-    DOM.divCodeOutput.style.whiteSpace = 'pre';
-    if (selectedFile === 'All') {
-        DOM.divCodeOutput.textContent = appState.fileContents.map(fc => `********** ${fc.path} **********\n${fc.content}\n---`).join('\n');
-    } else {
-        const file = appState.fileContents.find(fc => fc.path === selectedFile);
-        DOM.divCodeOutput.textContent = file ? `********** ${file.path} **********\n${file.content}` : 'File not found.';
-    }
-}

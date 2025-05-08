@@ -1,4 +1,4 @@
-
+// File: domComponents.js
 
 export function initComponents(appSettings, DOM) {
     console.log('Initializing components');
@@ -84,19 +84,6 @@ export function initComponents(appSettings, DOM) {
         panels[index].classList.add('active');
     }
 
-    function populateSelectOptions(selectElement, items, valueField, label, selectedItem) {
-        console.log(`Populating select options for: ${selectElement.id}`);
-        selectElement.innerHTML = '';
-        items.forEach((item, index) => {
-            const option = document.createElement('option');
-            const value = typeof valueField === 'function' ? valueField(item, index) : item[valueField];
-            const text = typeof label === 'function' ? label(item) : item[label];
-            option.value = value;
-            option.textContent = text;
-            if (value === selectedItem) {
-                option.selected = true;
-            }
-            selectElement.appendChild(option);
-        });
-    }
+    
+
 }

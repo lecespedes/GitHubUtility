@@ -1,3 +1,5 @@
+// File: app.js
+
 import {appSettings} from './appSettings.js';
 import {initApp} from './appController.js';
 
@@ -8,7 +10,8 @@ apiLimitResetDate: 'N/A',
 selectedFileType: appSettings.DEFAULT_FILE_TYPE,
 fileContents: [],
 activeProfileIndex: appSettings.DEFAULT_PROFILE_INDEX,
-activeSettings: appSettings.profiles[appSettings.DEFAULT_PROFILE_INDEX]
+activeProfile: appSettings.profiles[appSettings.DEFAULT_PROFILE_INDEX]
 };
-
+Object.seal(appState);
+Object.seal(appState.activeProfile);
 initApp({appSettings,appState});

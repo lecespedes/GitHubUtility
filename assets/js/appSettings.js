@@ -1,3 +1,5 @@
+// File: appSettings.js
+
 //export default { //** works as default anannonomous import you can name it anything you want as a mutable object; use  import <name> from 'settings';
 export const appSettings = { //** works as a named export as a mutable object; use import {settings} from 'settings';
     //const settings = {
