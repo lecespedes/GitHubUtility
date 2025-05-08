@@ -1,6 +1,6 @@
 // File: domComponents.js
 
-export function initComponents(appSettings, DOM) {
+export function initComponents(appSettings, DOM, cacheMan) {
     console.log('Initializing components');
 
     // Define component configurations
@@ -14,9 +14,7 @@ export function initComponents(appSettings, DOM) {
                     s => `${s.OWNER}/${s.REPO}/${s.BRANCH}`,
                     appSettings.DEFAULT_PROFILE_INDEX
                 ],
-                method: function(selectElement, ...props) {
-                    populateSelectOptions(selectElement, ...props);
-                }
+                method: populateSelectOptions  
             },
             {
                 element: 'selFileType',
@@ -26,9 +24,17 @@ export function initComponents(appSettings, DOM) {
                     type => type,
                     appSettings.DEFAULT_FILE_TYPE
                 ],
-                method: function(selectElement, ...props) {
-                    populateSelectOptions(selectElement, ...props);
-                }
+                method: populateSelectOptions              
+            },
+            {
+                element: 'selFileList',
+                props: [
+                    cacheMan.getFileList(),
+                    item => item.value,
+                    item => item.text,
+                    'All'
+                ],
+                method: populateSelectOptions
             }
         ],
         TabControls: [
@@ -55,27 +61,34 @@ export function initComponents(appSettings, DOM) {
                         console.warn(`DOM element not found: ${element}`);
                         return;
                     }
-                    method.call(null, selectElement, ...props);
+                    method(selectElement, ...props);
                 } else {
-                    method.call(null, ...props);
+                    method(...props);
                 }
             });
         }
     });
-
     console.log('Components initialized');
 
-    // Helper functions
+    /**
+     * Initializes tab controls for the application.
+     * @param {string} className - Class name of tab controls.
+     * @returns {void}
+     */
     function initTabControl(className) {
-        console.log(`Initializing tab control: ${className}`);
         const tabs = document.querySelectorAll(`.${className}.tab-ctrl-btn`);
         tabs.forEach((tab, index) => {
             tab.addEventListener('click', () => selectTab(className, index));
         });
     }
 
+    /**
+     * Selects a tab and updates the UI.
+     * @param {string} tabClass - Class name of tab controls.
+     * @param {number} index - Index of the tab to select.
+     * @returns {void}
+     */
     function selectTab(tabClass, index) {
-        console.log(`Selecting tab: ${tabClass}, index: ${index}`);
         const tabs = document.querySelectorAll(`.${tabClass}.tab-ctrl-btn`);
         const panels = document.querySelectorAll(`.${tabClass}.tab-content`);
         tabs.forEach(t => t.classList.remove('active'));
@@ -83,7 +96,28 @@ export function initComponents(appSettings, DOM) {
         tabs[index].classList.add('active');
         panels[index].classList.add('active');
     }
-
-    
-
+}
+/**
+ * Populates a select element with options.
+ * @param {HTMLElement} selectElement - The select element to populate.
+ * @param {Array} items - Array of items to create options from.
+ * @param {Function|string} valueField - Function or field name to get option value.
+ * @param {Function|string} label - Function or field name to get option text.
+ * @param {string} selectedItem - Value of the selected option.
+ * @returns {void}
+ */
+export function populateSelectOptions(selectElement, items, valueField, label, selectedItem) {
+    console.log(`Populating select options for: ${selectElement.id}`);
+    selectElement.innerHTML = '';
+    items.forEach((item, index) => {
+        const option = document.createElement('option');
+        const value = typeof valueField === 'function' ? valueField(item, index) : item[valueField];
+        const text = typeof label === 'function' ? label(item) : item[label];
+        option.value = value;
+        option.textContent = text;
+        if (value === selectedItem) {
+            option.selected = true;
+        }
+        selectElement.appendChild(option);
+    });
 }

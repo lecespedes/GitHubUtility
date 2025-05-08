@@ -66,6 +66,7 @@ export const appSettings = { //** works as a named export as a mutable object; u
                 '.git/',
                 '.gitignore',
                 'favicon.ico',
+                'text/',
                 'Versions/'
             ],
             extensionsToFilter: ['.md', '.jpg', '.jpeg', '.png', '.svg', '.eot', '.ttf', '.woff', '.woff2']

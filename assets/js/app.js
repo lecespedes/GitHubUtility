@@ -1,7 +1,7 @@
 // File: app.js
-
 import {appSettings} from './appSettings.js';
-import {initApp} from './appController.js';
+import { getAppFunctions } from './appFunctions.js';
+import { createAppManager } from './appManager.js';
 
 // Application state
 const appState = {
@@ -14,4 +14,8 @@ activeProfile: appSettings.profiles[appSettings.DEFAULT_PROFILE_INDEX]
 };
 Object.seal(appState);
 Object.seal(appState.activeProfile);
-initApp({appSettings,appState});
+
+let DOM = {};
+const uiFunctions = getAppFunctions(appSettings, appState, DOM);
+createAppManager(appSettings, appState, uiFunctions, DOM);
+console.log(document);
