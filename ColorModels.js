@@ -902,4 +902,168 @@ export class Cylinder extends ColorModel {
     this.axesGroup.name = 'hslCylinderAxes';
     const axisConfigs = [
       { label: 'S', end: new THREE.Vector3(config.CYLINDER_SIZE, 0, 0), colorFunc: t => ColorModel.hslToRGB(color.h, t * 100, color.l) },
-      { label: 'L', end: new THREE.Vector3(0, config
+      { label: 'L', end: new THREE.Vector3(0, config.CYLINDER_SIZE, 0), colorFunc: t => ColorModel.hslToRGB(color.h, color.s, t * 100) }
+    ];
+    axisConfigs.forEach(({ label, end, colorFunc }, index) => {
+      const axis = ColorModel.createAxis(new THREE.Vector3(0, 0, 0), end, colorFunc);
+      this.axesGroup.add(axis);
+      const labelPos = end.clone().add(
+        new THREE.Vector3(index === 0 ? config.LABEL_DISTANCE : 0, index === 1 ? config.LABEL_DISTANCE : 0, 0)
+      );
+      const labelSprite = ColorModel.createLabel(label, labelPos, '#000000');
+      this.axesGroup.add(labelSprite);
+    });
+    this.scene.add(this.axesGroup);
+
+    this.markerLinesGroup.children.forEach(child => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+    });
+    this.markerLinesGroup.clear();
+    this.markerLinesGroup = new THREE.Group();
+    this.markerLinesGroup.name = 'hslCylinderMarkerLines';
+
+    const lDistToFloor = Math.abs(this.marker.position.y - 0);
+    const lDistToCeiling = Math.abs(this.marker.position.y - config.CYLINDER_SIZE);
+    const lTargetY = lDistToFloor <= lDistToCeiling ? 0 : config.CYLINDER_SIZE;
+    const lStart = this.marker.position.clone();
+    const lEnd = new THREE.Vector3(this.marker.position.x, lTargetY, this.marker.position.z);
+    if (lStart.distanceTo(lEnd) > 0.001) {
+      const geometry = new THREE.BufferGeometry().setFromPoints([lStart, lEnd]);
+      const material = new THREE.LineDashedMaterial({
+        color: 0x000000,
+        linewidth: 1,
+        dashSize: config.MARKER_LINE_DASH_SIZE,
+        gapSize: config.MARKER_LINE_DASH_SIZE
+      });
+      const line = new THREE.Line(geometry, material);
+      line.computeLineDistances();
+      this.markerLinesGroup.add(line);
+    }
+
+    const distToOrigin = Math.sqrt(this.marker.position.x * this.marker.position.x + this.marker.position.z * this.marker.position.z);
+    const sMax = config.CYLINDER_SIZE;
+    const wallX = sMax * Math.cos((this.color.h * Math.PI) / 180);
+    const wallZ = sMax * Math.sin((this.color.h * Math.PI) / 180);
+    const distToWall = Math.sqrt((this.marker.position.x - wallX) ** 2 + (this.marker.position.z - wallZ) ** 2);
+    const sStart = this.marker.position.clone();
+    let sEnd;
+    if (distToOrigin <= distToWall) {
+      sEnd = new THREE.Vector3(0, this.marker.position.y, 0);
+    } else {
+      sEnd = new THREE.Vector3(wallX, this.marker.position.y, wallZ);
+    }
+    if (sStart.distanceTo(sEnd) > 0.001) {
+      const geometry = new THREE.BufferGeometry().setFromPoints([sStart, sEnd]);
+      const material = new THREE.LineDashedMaterial({
+        color: 0x000000,
+        linewidth: 1,
+        dashSize: config.MARKER_LINE_DASH_SIZE,
+        gapSize: config.MARKER_LINE_DASH_SIZE
+      });
+      const line = new THREE.Line(geometry, material);
+      line.computeLineDistances();
+      this.markerLinesGroup.add(line);
+    }
+    this.scene.add(this.markerLinesGroup);
+
+    // Update plots
+    ['r', 'g', 'b', 'h'].forEach(type => {
+      if (this.plotSettings[type]) this.plot(type, true);
+    });
+  }
+
+  plot(type, enabled) {
+    const groupKey = `${type}PlotGroup`;
+    if (this.plotGroups[groupKey]) {
+      this.plotGroups[groupKey].children.forEach(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+      });
+      this.scene.remove(this.plotGroups[groupKey]);
+      this.plotGroups[groupKey] = null;
+    }
+    if (!enabled) return;
+
+    this.plotGroups[groupKey] = new THREE.Group();
+    this.plotGroups[groupKey].name = `${type}PlotPoints`;
+    const numSwatches = (100 / config.swatchCtrlStep) + 1;
+    const rgb = ColorModel.hslToRGB(this.color.h, this.color.s, this.color.l);
+    const { r = 0, g = 0, b = 0 } = rgb;
+
+    if (type === 'r') {
+      for (let i = 0; i < numSwatches; i++) {
+        const normalizedVal = i * config.swatchCtrlStep;
+        const rVal = (255 * normalizedVal) / 100;
+        const hex = ColorModel.rgbToHex(Math.round(rVal), Math.round(g), Math.round(b));
+        const hsl = ColorModel.hexToHSL(hex);
+        const material = new THREE.MeshBasicMaterial();
+        material.color.setRGB(rVal / 255, g / 255, b / 255);
+        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const hRad = (parseFloat(hsl.h) * Math.PI * 2) / 360;
+        const sScaled = parseFloat(hsl.s) * config.CYLINDER_SIZE / 100;
+        point.position.set(
+          sScaled * Math.cos(hRad),
+          parseFloat(hsl.l) * config.CYLINDER_SIZE / 100,
+          sScaled * Math.sin(hRad)
+        );
+        this.plotGroups[groupKey].add(point);
+      }
+    } else if (type === 'g') {
+      for (let i = 0; i < numSwatches; i++) {
+        const normalizedVal = i * config.swatchCtrlStep;
+        const gVal = (255 * normalizedVal) / 100;
+        const hex = ColorModel.rgbToHex(Math.round(r), Math.round(gVal), Math.round(b));
+        const hsl = ColorModel.hexToHSL(hex);
+        const material = new THREE.MeshBasicMaterial();
+        material.color.setRGB(r / 255, gVal / 255, b / 255);
+        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const hRad = (parseFloat(hsl.h) * Math.PI * 2) / 360;
+        const sScaled = parseFloat(hsl.s) * config.CYLINDER_SIZE / 100;
+        point.position.set(
+          sScaled * Math.cos(hRad),
+          parseFloat(hsl.l) * config.CYLINDER_SIZE / 100,
+          sScaled * Math.sin(hRad)
+        );
+        this.plotGroups[groupKey].add(point);
+      }
+    } else if (type === 'b') {
+      for (let i = 0; i < numSwatches; i++) {
+        const normalizedVal = i * config.swatchCtrlStep;
+        const bVal = (255 * normalizedVal) / 100;
+        const hex = ColorModel.rgbToHex(Math.round(r), Math.round(g), Math.round(bVal));
+        const hsl = ColorModel.hexToHSL(hex);
+        const material = new THREE.MeshBasicMaterial();
+        material.color.setRGB(r / 255, g / 255, bVal / 255);
+        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const hRad = (parseFloat(hsl.h) * Math.PI * 2) / 360;
+        const sScaled = parseFloat(hsl.s) * config.CYLINDER_SIZE / 100;
+        point.position.set(
+          sScaled * Math.cos(hRad),
+          parseFloat(hsl.l) * config.CYLINDER_SIZE / 100,
+          sScaled * Math.sin(hRad)
+        );
+        this.plotGroups[groupKey].add(point);
+      }
+    } else if (type === 'h') {
+      for (let i = 0; i < numSwatches; i++) {
+        const normalizedVal = i * config.swatchCtrlStep;
+        const hVal = (359 * normalizedVal) / 100;
+        const rgb = ColorModel.hslToRGB(hVal, this.color.s, this.color.l);
+        const material = new THREE.MeshBasicMaterial();
+        material.color.setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const hRad = (hVal * Math.PI * 2) / 360;
+        const sScaled = this.color.s * config.CYLINDER_SIZE / 100;
+        const lScaled = this.color.l * config.CYLINDER_SIZE / 100;
+        point.position.set(
+          sScaled * Math.cos(hRad),
+          lScaled,
+          sScaled * Math.sin(hRad)
+        );
+        this.plotGroups[groupKey].add(point);
+      }
+    }
+    this.scene.add(this.plotGroups[groupKey]);
+  }
+}

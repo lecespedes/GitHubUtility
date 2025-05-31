@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Color Visualizer</title>
+  <link rel="stylesheet" href="3DColorPlot.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@v0.176.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.176.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <h1>3D Color Visualizer</h1>
+    <div id="colorSwatch"><span class="hex-text"></span></div>
+  </header>
+  <div class="container" id="container">
+    <div class="canvas-container">
+      <!-- RGB Section -->
+      <div class="canvas-wrapper">
+        <div class="canvas-title">
+          <h2>RGB</h2>
+          <div class="toggle-switch">
+            <input type="checkbox" id="hPlotToggle">
+            <label for="hPlotToggle"></label>
+            HPlot
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" id="sPlotToggle">
+            <label for="sPlotToggle"></label>
+            SPlot
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" id="lPlotToggle">
+            <label for="lPlotToggle"></label>
+            LPlot
+          </div>
+        </div>
+        <canvas id="rgbCanvas"></canvas>
+        <div id="rgb-swatches" class="axis-swatches"></div>
+        <div id="rgb-inputs" class="input-container"></div>
+      </div>
+      <!-- HSL Section (Cylinder Primary, Cube Secondary) -->
+      <div class="canvas-wrapper">
+        <div class="canvas-title">
+          <h2>HSL</h2>
+          <div class="controls-row">
+            <div class="tab active" id="tab-cylinder">Cylinder</div>
+            <div class="tab" id="tab-cube">Cube</div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="rPlotToggle">
+              <label for="rPlotToggle"></label>
+              RPlot
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="gPlotToggle">
+              <label for="gPlotToggle"></label>
+              GPlot
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="bPlotToggle">
+              <label for="bPlotToggle"></label>
+              BPlot
+            </div>
+          </div>
+        </div>
+        <div class="hsl-canvas-div active" id="hsl-cylinder-div">
+          <canvas id="hslCylinderCanvas"></canvas>
+        </div>
+        <div class="hsl-canvas-div" id="hsl-cube-div">
+          <canvas id="hslCubeCanvas"></canvas>
+        </div>
+        <div id="hsl-swatches" class="axis-swatches"></div>
+        <div id="hsl-inputs" class="input-container"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="input-group">
+        <label for="json-url">Import JSON URL</label>
+        <input type="text" id="json-url" placeholder="Enter JSON URL" value="https://raw.githubusercontent.com/lecespedes/GitHubUtility/refs/heads/main/pantone.json">
+      </div>
+      <button id="import-data">Import Data</button>
+      <button id="clear-data">Clear Data</button>
+      <div id="error" class="error"></div>
+    </div>
+  </div>
+  <div id="tooltip"></div>
+
+  <script type="module">
+    import { ModelManager } from './ModelManager.js';
+    import { RGBCube, HSLCube, Cylinder } from './ColorModels.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const dom = {
+        rgbCanvas: document.getElementById('rgbCanvas'),
+        hslCubeCanvas: document.getElementById('hslCubeCanvas'),
+        hslCylinderCanvas: document.getElementById('hslCylinderCanvas'),
+        colorSwatch: document.getElementById('colorSwatch'),
+        hPlotToggle: document.getElementById('hPlotToggle'),
+        sPlotToggle: document.getElementById('sPlotToggle'),
+        lPlotToggle: document.getElementById('lPlotToggle'),
+        rPlotToggle: document.getElementById('rPlotToggle'),
+        gPlotToggle: document.getElementById('gPlotToggle'),
+        bPlotToggle: document.getElementById('bPlotToggle'),
+        tabCube: document.getElementById('tab-cube'),
+        tabCylinder: document.getElementById('tab-cylinder'),
+        hslCubeDiv: document.getElementById('hsl-cube-div'),
+        hslCylinderDiv: document.getElementById('hsl-cylinder-div'),
+        rgbSwatches: document.getElementById('rgb-swatches'),
+        hslSwatches: document.getElementById('hsl-swatches'),
+        rgbInputs: document.getElementById('rgb-inputs'),
+        hslInputs: document.getElementById('hsl-inputs'),
+        importData: document.getElementById('import-data'),
+        clearData: document.getElementById('clear-data'),
+        jsonUrl: document.getElementById('json-url'),
+        error: document.getElementById('error')
+      };
+
+      // Initialize models
+      const rgbCube = new RGBCube(dom.rgbCanvas, dom.rgbCanvas.clientWidth || 500, dom.rgbCanvas.clientHeight || 400);
+      const hslCube = new HSLCube(dom.hslCubeCanvas, dom.hslCubeCanvas.clientWidth || 500, dom.hslCubeCanvas.clientHeight || 400);
+      const hslCylinder = new Cylinder(dom.hslCylinderCanvas, dom.hslCylinderCanvas.clientWidth || 500, dom.hslCylinderCanvas.clientHeight || 400);
+
+      // Initialize ModelManager
+      const modelManager = new ModelManager();
+
+      // Register models
+      modelManager.registerModel('rgb', rgbCube, dom.rgbCanvas.clientWidth || 500, dom.rgbCanvas.clientHeight || 400);
+      modelManager.registerModel('hslCube', hslCube, dom.hslCubeCanvas.clientWidth || 500, dom.hslCubeCanvas.clientHeight || 400);
+      modelManager.registerModel('hslCylinder', hslCylinder, dom.hslCylinderCanvas.clientWidth || 500, dom.hslCylinderCanvas.clientHeight || 400);
+
+      // Initialize controls
+      modelManager.swatchControls('rgb', dom.rgbSwatches);
+      modelManager.swatchControls('hsl', dom.hslSwatches);
+      modelManager.inputControls('rgb', dom.rgbInputs);
+      modelManager.inputControls('hsl', dom.hslInputs);
+      modelManager.currentSwatch(dom.colorSwatch);
+
+      // Event listeners
+      dom.tabCube.addEventListener('click', () => {
+        dom.hslCubeDiv.classList.add('active');
+        dom.hslCylinderDiv.classList.remove('active');
+        dom.tabCube.classList.add('active');
+        dom.tabCylinder.classList.remove('active');
+        modelManager.dom.tooltip.style.display = 'none';
+      });
+
+      dom.tabCylinder.addEventListener('click', () => {
+        dom.hslCubeDiv.classList.remove('active');
+        dom.hslCylinderDiv.classList.add('active');
+        dom.tabCube.classList.remove('active');
+        dom.tabCylinder.classList.add('active');
+      });
+
+      dom.hPlotToggle.addEventListener('change', () => rgbCube.setPlotSetting('h', dom.hPlotToggle.checked));
+      dom.sPlotToggle.addEventListener('change', () => rgbCube.setPlotSetting('s', dom.sPlotToggle.checked));
+      dom.lPlotToggle.addEventListener('change', () => rgbCube.setPlotSetting('l', dom.lPlotToggle.checked));
+      dom.rPlotToggle.addEventListener('change', () => {
+        hslCube.setPlotSetting('r', dom.rPlotToggle.checked);
+        hslCylinder.setPlotSetting('r', dom.rPlotToggle.checked);
+      });
+      dom.gPlotToggle.addEventListener('change', () => {
+        hslCube.setPlotSetting('g', dom.gPlotToggle.checked);
+        hslCylinder.setPlotSetting('g', dom.gPlotToggle.checked);
+      });
+      dom.bPlotToggle.addEventListener('change', () => {
+        hslCube.setPlotSetting('b', dom.bPlotToggle.checked);
+        hslCylinder.setPlotSetting('b', dom.bPlotToggle.checked);
+      });
+
+      // Import data event
+      dom.importData.addEventListener('click', async () => {
+        const url = dom.jsonUrl.value;
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error('Failed to fetch JSON');
+          const json = await response.json();
+          let data = [];
+          if (Array.isArray(json.colors)) {
+            data = json.colors.map(item => ({
+              code: item.code,
+              hex: item.hex,
+              hsl: Cylinder.hexToHSL(item.hex)
+            }));
+          } else {
+            data = Object.entries(json).map(([code, hex]) => ({
+              code,
+              hex,
+              hsl: Cylinder.hexToHSL(hex)
+            }));
+          }
+          hslCylinder.plotHSLData(data);
+          dom.error.textContent = '';
+        } catch (error) {
+          dom.error.textContent = `Import error: ${error.message}`;
+        }
+      });
+
+      // Clear data event
+      dom.clearData.addEventListener('click', () => {
+        hslCylinder.clearImportedData();
+        dom.error.textContent = '';
+      });
+
+      // Start animation
+      modelManager.animate();
+    });
+  </script>
+</body>
+</html>
