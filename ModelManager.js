@@ -1,4 +1,4 @@
-import { ColorModel } from './ColorModels.js';
+import { ColorModel, RGBCube } from '.ColorModels.js';
 
 export class ModelManager {
   constructor() {
