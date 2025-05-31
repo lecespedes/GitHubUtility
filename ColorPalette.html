@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Palette</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      padding: 2rem;
+    }
+
+    hr {
+      margin: 1.5rem 0;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: black;
+    }
+
+    /* Button container */
+    .button-container {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    #copyCssButton, #copyJsonButton, #copyHexJsonButton, #copyHslJsonButton, #copyHexCssButton, #convertButton {
+      background-color: #eee;
+      border: 1px solid #aaa;
+      color: black;
+      border-radius: 10px;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #copyCssButton:hover, #copyJsonButton:hover, #copyHexJsonButton:hover, #copyHslJsonButton:hover, #copyHexCssButton:hover, #convertButton:hover {
+      background-color: #ddd;
+    }
+
+    /* Switch UI */
+    .switch-container {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .switch-label {
+      font-size: 1rem;
+      color: black;
+      margin-right: 0.5rem;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #666;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    /* Palette styles */
+    .palette {
+      margin: 0 auto;
+    }
+
+    .palette.horizontal {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .palette.vertical {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .Color-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .swatch, .analytics-swatch {
+      background-color: #eee;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      height: 100%;
+    }
+
+    .swatch-color {
+      width: 100%;
+      height: 80px;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+      border: 1px solid;
+    }
+
+    .swatch-name, .analytics-title {
+      font-weight: bold;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+      color: black;
+    }
+
+    .swatch-hex, .swatch-hsl, .swatch-delta-l, .analytics-data {
+      font-size: 0.9rem;
+      color: black;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Output containers for CSS, JSON, Hex CSS, Hex JSON, and HSL */
+    .output-row {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+
+    .output-row.json {
+      max-width: 1200px;
+      margin: auto;
+    }
+    .output-row.json .output-column {
+      width: 50%;
+    }
+    .output-row.json .output-panel {
+      width: 100%;
+    }
+
+    .output-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .output-panel {
+      border: 2px inset #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+      max-width: 600px;
+      flex: 1;
+    }
+    .output-panel.data {
+      border: 2px outset #ccc;
+      background: #eee;
+    }
+    .output-panel textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: black;
+      border: 2px inset #ccc;
+      resize: none;
+    }
+    #hslJsonData {
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .css-output pre, .json-output pre, .hex-css-output pre, .hex-output pre, .hsl-output pre {
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: black;
+      white-space: pre-wrap;
+      margin: 0;
+    }
+
+    .convert-button-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+
+    /* Hue circle container */
+    .hue-circle-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 1.5rem;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hue-circle-container h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    #hueCircle {
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (max-width: 600px) {
+      .palette.horizontal {
+        grid-template-columns: repeat(4, minmax(120px, 1fr));
+      }
+      .palette.vertical {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      }
+      .swatch, .analytics-swatch {
+        padding: 0.75rem;
+      }
+      .swatch-name, .analytics-title {
+        font-size: 0.85rem;
+      }
+      .swatch-hex, .swatch-hsl, .swatch-delta-l, .analytics-data {
+        font-size: 0.75rem;
+      }
+      .swatch-color {
+        height: 60px;
+      }
+      .output-panel {
+        max-width: 100%;
+      }
+      .output-row {
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .output-row.json .output-column {
+        width: 100%;
+      }
+      .output-panel textarea {
+        font-size: 0.75rem;
+      }
+      #copyCssButton, #copyJsonButton, #copyHexCssButton, #copyHexJsonButton, #copyHslJsonButton, #convertButton {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+      }
+      .hue-circle-container {
+        max-width: 350px;
+      }
+      #hueCircle {
+        width: 350px;
+        height: 350px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Color Palette</h1>
+  <div class="button-container">
+    <button id="copyCssButton">Copy CSS Variables</button>
+  </div>
+  <div class="switch-container">
+    <span class="switch-label">Horizontal</span>
+    <label class="switch">
+      <input type="checkbox" id="layoutToggle">
+      <span class="slider"></span>
+    </label>
+    <span class="switch-label">Vertical</span>
+  </div>
+  <div class="palette horizontal" id="palette"></div>
+  <hr>
+  <div class="output-row">
+    <div class="output-column">
+      <h1>JSON Palette Data</h1>
+      <button id="copyJsonButton" onclick="copyJsonData()">Copy JSON Data</button>
+      <div class="output-panel">
+        <pre id="jsonPaletteData"></pre>
+      </div>
+    </div>
+    <div class="output-column">
+      <h1>CSS Variables (HSL)</h1>
+      <button id="copyCssButton" onclick="copyCssVariables()">Copy HSL CSS Variables</button>
+      <div class="output-panel">
+        <pre id="cssRootVariables"></pre>
+      </div>
+    </div>
+    <div class="output-column">
+      <h1>CSS Variables (Hex)</h1>
+      <button id="copyHexCssButton" onclick="copyHexCssVariables()">Copy Hex CSS Variables</button>
+      <div class="output-panel">
+        <pre id="hexCssRootVariables"></pre>
+      </div>
+    </div>
+  </div>
+  <div class="output-row json">
+    <div class="output-column">
+      <h1>Hex<br>JSON Data</h1>
+      <button id="copyHexJsonButton" onclick="copyHexJsonData()">Copy Hex JSON</button>
+      <div class="output-panel data">
+        <textarea id="hexJsonData" spellcheck="false"></textarea>
+      </div>
+    </div>
+    <div class="convert-button-container">
+      <button id="convertButton" onclick="convertHexToHsl()">Convert >></button>
+    </div>
+    <div class="output-column">
+      <h1>Computed HSL<br>JSON Data</h1>
+      <button id="copyHslJsonButton" onclick="copyHslJsonData()">Copy HSL JSON</button>
+      <div class="output-panel">
+        <pre id="hslJsonData"></pre>
+      </div>
+    </div>
+  </div>
+  <div class="hue-circle-container">
+    <h1>Hue Circle (Base Variations)</h1>
+    <canvas id="hueCircle" width="500" height="500"></canvas>
+  </div>
+
+  <script>
+    // Original hex color palette (6-digit HEX codes)
+    const hexPaletteData = {
+      "Primary-Accent": {
+        "Dark": "#137a82",
+        "Base": "#1fb1bd",
+        "Medium": "#6cd6de",
+        "Light": "#c7f0f5"
+      },
+      "Primary": {
+        "Dark": "#003087",
+        "Base": "#007bff",
+        "Medium": "#80c4ff",
+        "Light": "#d1e9ff"
+      },
+      "Accent": {
+        "Dark": "#cc6d00",
+        "Base": "#ff922b",
+        "Medium": "#ffbb70",
+        "Light": "#ffe8cc"
+      },
+      "Secondary": {
+        "Dark": "#999999",
+        "Base": "#cccccc",
+        "Medium": "#e6e6e6",
+        "Light": "#fafafa"
+      },
+      "Secondary-Accent": {
+        "Dark": "#7c4a64",
+        "Base": "#a46583",
+        "Medium": "#c78ea7",
+        "Light": "#edd4df"
+      },
+      "Text": {
+        "Base": "#333333"
+      }
+    };
+
+    // HSL palette for swatches and CSS variables (1 decimal place, updated Primary-Accent)
+    const paletteData = {
+      "Primary-Accent": {
+        "Dark": "hsl(180, 70%, 30%)",
+        "Base": "hsl(180, 70%, 50%)",
+        "Medium": "hsl(180, 70%, 75%)",
+        "Light": "hsl(180, 70%, 90%)"
+      },
+      "Primary": {
+        "Dark": "hsl(210, 100%, 25%)",
+        "Base": "hsl(210, 100%, 50%)",
+        "Medium": "hsl(210, 100%, 75%)",
+        "Light": "hsl(210, 100%, 90%)"
+      },
+      "Accent": {
+        "Dark": "hsl(30, 100%, 40%)",
+        "Base": "hsl(30, 100%, 50%)",
+        "Medium": "hsl(30, 100%, 75%)",
+        "Light": "hsl(30, 100%, 90%)"
+      },
+      "Secondary": {
+        "Dark": "hsl(0, 0%, 54%)",
+        "Base": "hsl(0, 0%, 69%)",
+        "Medium": "hsl(0, 0%, 84%)",
+        "Light": "hsl(0, 0%, 94%)"
+      },
+      "Secondary-Accent": {
+        "Dark": "hsl(330, 25%, 35%)",
+        "Base": "hsl(330, 25%, 50%)",
+        "Medium": "hsl(330, 25%, 70%)",
+        "Light": "hsl(330, 25%, 90%)"
+      },
+      "Text": {
+        "Base": "hsl(0, 0%, 20%)"
+      }
+    };
+
+    // Function to parse HSL string and extract H, S, L
+    function parseHSL(hsl) {
+      const match = hsl.match(/hsl\((\d+\.?\d*),\s*(\d+\.?\d*)%,\s*(\d+\.?\d*)%\)/);
+      if (!match) return { h: 0, s: 0, l: 0 };
+      return {
+        h: parseFloat(match[1]),
+        s: parseFloat(match[2]),
+        l: parseFloat(match[3])
+      };
+    }
+
+    // Function to calculate analytics for a color group
+    function calculateGroupAnalytics(group, variations) {
+      let hues = [], saturations = [], lightnesses = [];
+      for (const variation of variations) {
+        if (group[variation]) {
+          const { h, s, l } = parseHSL(group[variation]);
+          hues.push(h);
+          saturations.push(s);
+          lightnesses.push(l);
+        }
+      }
+      const count = hues.length;
+      if (!count) return { avgH: 0, avgDeltaS: 0, avgDeltaL: 0 };
+
+      // Average Hue
+      const avgH = hues.reduce((sum, h) => sum + h, 0) / count;
+
+      // Average Delta Saturation (S2 - S1, S3 - S2, etc.)
+      let deltaS = [];
+      for (let i = 1; i < saturations.length; i++) {
+        deltaS.push(saturations[i] - saturations[i - 1]);
+      }
+      const avgDeltaS = deltaS.length > 0 ? deltaS.reduce((sum, d) => sum + d, 0) / deltaS.length : 0;
+
+      // Average Delta Lightness (L2 - L1, L3 - L2, etc.)
+      let deltaL = [];
+      for (let i = 1; i < lightnesses.length; i++) {
+        deltaL.push(lightnesses[i] - lightnesses[i - 1]);
+      }
+      const avgDeltaL = deltaL.length > 0 ? deltaL.reduce((sum, d) => sum + d, 0) / deltaL.length : 0;
+
+      return {
+        avgH: Number(avgH.toFixed(1)),
+        avgDeltaS: Number(avgDeltaS.toFixed(1)),
+        avgDeltaL: Number(avgDeltaL.toFixed(1))
+      };
+    }
+
+    // Function to convert hex to HSL with 1 decimal place precision
+    function hexToHSL(hex) {
+      hex = hex.replace('#', '');
+      // Expand 3-digit HEX to 6-digit
+      if (hex.length === 3) {
+        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+      }
+      let r = parseInt(hex.substring(0, 2), 16) / 255;
+      let g = parseInt(hex.substring(2, 4), 16) / 255;
+      let b = parseInt(hex.substring(4, 6), 16) / 255;
+
+      let max = Math.max(r, g, b);
+      let min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+
+      if (max !== min) {
+        let d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+
+      // Scale to percentages
+      h = h * 360;
+      s = s * 100;
+      l = l * 100;
+
+      // Format to 1 decimal place
+      h = Number(h.toFixed(1));
+      s = Number(s.toFixed(1));
+      l = Number(l.toFixed(1));
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+
+    // Function to convert HSL to hex with high precision
+    function hslToHex(hsl) {
+      // Parse HSL string (e.g., "hsl(207.9, 100.0%, 75.1%)")
+      const match = hsl.match(/hsl\((\d+\.?\d*),\s*(\d+\.?\d*)%,\s*(\d+\.?\d*)%\)/);
+      if (!match) return '#000000';
+      let h = parseFloat(match[1]) / 360;
+      let s = parseFloat(match[2]) / 100;
+      let l = parseFloat(match[3]) / 100;
+
+      let r, g, b;
+      if (s === 0) {
+        r = g = b = l; // Achromatic
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+
+      const toHex = x => {
+        const hex = Math.round(x * 255).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      };
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    // Function to draw hue circle for Base variations
+    function drawHueCircle() {
+      const canvas = document.getElementById('hueCircle');
+      if (!canvas.getContext) {
+        alert('Canvas not supported in this browser.');
+        return;
+      }
+      const ctx = canvas.getContext('2d');
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = 150;
+      const tickRadius = 140; // End of degree tick marks
+      const labelRadius = 125; // Position of degree labels
+      const colorRadius = 170; // End of color group tick marks
+      const pointRadius = 5;
+      const labelOffset = 10;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw circle outline
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw degree tick marks and degree labels every 15°
+      ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillStyle = '#666';
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let degree = 0; degree < 360; degree += 15) {
+        const displayDegree = degree <= 180 ? degree : -(360 - degree);
+        const angle = ((degree - 90) * Math.PI) / 180; // Rotate -90° to put 0° at 12 o'clock
+        const startX = centerX + radius * Math.cos(angle);
+        const startY = centerY + radius * Math.sin(angle);
+        const tickEndX = centerX + tickRadius * Math.cos(angle);
+        const tickEndY = centerY + tickRadius * Math.sin(angle);
+        const labelX = centerX + labelRadius * Math.cos(angle);
+        const labelY = centerY + labelRadius * Math.sin(angle);
+
+        // Draw degree tick mark
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(tickEndX, tickEndY);
+        ctx.stroke();
+
+        // Draw degree label (perpendicular to arc)
+        ctx.save();
+        ctx.translate(labelX, labelY);
+        ctx.rotate(angle); // Perpendicular to radius (normal to arc)
+        // Flip text 180° for bottom half (90° < degree <= 255°)
+        if (degree > 180 ) {
+          ctx.rotate(Math.PI);
+        }
+        ctx.fillText(`${displayDegree}°`, 0, 0);
+        ctx.restore();
+      }
+
+      // Collect Base hues
+      const hues = [];
+      for (const color in paletteData) {
+        if (paletteData[color].Base) {
+          const { h } = parseHSL(paletteData[color].Base);
+          hues.push({ group: color, hue: h, hsl: paletteData[color].Base });
+        }
+      }
+
+      // Draw points, color tick marks, and group labels
+      hues.forEach((item, index) => {
+        const angle = ((item.hue - 90) * Math.PI) / 180; // Rotate -90° to put 0° at 12 o'clock
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        const tickStartX = centerX + radius * Math.cos(angle);
+        const tickStartY = centerY + radius * Math.sin(angle);
+        const tickEndX = centerX + colorRadius * Math.cos(angle);
+        const tickEndY = centerY + colorRadius * Math.sin(angle);
+
+        // Draw point
+        ctx.beginPath();
+        ctx.arc(x, y, pointRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = item.hsl; // Use HSL color of Base variation
+        ctx.fill();
+
+        // Draw color tick mark
+        ctx.beginPath();
+        ctx.moveTo(tickStartX, tickStartY);
+        ctx.lineTo(tickEndX, tickEndY);
+        ctx.strokeStyle = item.hsl; // Match Base hue color
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Draw group label
+        ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = item.hue > 180 && item.hue < 360 ? 'right' : 'left';
+        ctx.textBaseline = 'middle';
+
+        // Position label from end of color tick mark
+        let labelX = centerX + (colorRadius + labelOffset) * Math.cos(angle);
+        let labelY = centerY + (colorRadius + labelOffset) * Math.sin(angle);
+        if (item.hue === 0) {
+          // Stack Secondary and Text vertically at 12 o'clock
+          labelY += index === hues.length - 1 ? 10 : -10; // Offset for Text vs. Secondary
+        }
+        ctx.fillText(item.group, labelX, labelY);
+      });
+    }
+
+    // Function to generate Hex CSS :root variables string
+    function generateHexCssRootVariables() {
+      let cssString = ':root {\n';
+      for (const Color in paletteData) {
+        const variations = paletteData[Color];
+        for (const variation in variations) {
+          const variableName = `--${Color}-${variation}`;
+          const hexColor = hslToHex(variations[variation]);
+          cssString += `  ${variableName}: ${hexColor};\n`;
+        }
+      }
+      cssString += '}';
+      document.getElementById('hexCssRootVariables').textContent = cssString;
+    }
+
+    // Function to copy Hex CSS variables
+    function copyHexCssVariables() {
+      const cssText = document.getElementById('hexCssRootVariables').textContent;
+      navigator.clipboard.writeText(cssText).then(() => {
+        const button = document.getElementById('copyHexCssButton');
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+          button.textContent = 'Copy Hex CSS Variables';
+        }, 2000);
+      });
+    }
+
+    // Function to generate Hex JSON data string
+    function generateHexJsonData() {
+      const jsonString = JSON.stringify(hexPaletteData, null, 2);
+      document.getElementById('hexJsonData').value = jsonString;
+    }
+
+    // Function to generate computed HSL JSON data string
+    function generateHslJsonData(hexData = hexPaletteData) {
+      const hslData = {};
+      for (const color in hexData) {
+        hslData[color] = {};
+        for (const variation in hexData[color]) {
+          hslData[color][variation] = hexToHSL(hexData[color][variation]);
+        }
+      }
+      const jsonString = JSON.stringify(hslData, null, 2);
+      document.getElementById('hslJsonData').textContent = jsonString;
+    }
+
+    // Function to convert edited Hex JSON to HSL JSON
+    function convertHexToHsl() {
+      const hexJsonText = document.getElementById('hexJsonData').value;
+      try {
+        const hexData = JSON.parse(hexJsonText);
+        generateHslJsonData(hexData);
+      } catch (e) {
+        alert('Invalid JSON format. Please check the Hex JSON data.');
+      }
+    }
+
+    // Function to copy Hex JSON data
+    function copyHexJsonData() {
+      const jsonText = document.getElementById('hexJsonData').value;
+      navigator.clipboard.writeText(jsonText).then(() => {
+        const button = document.getElementById('copyHexJsonButton');
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+          button.textContent = 'Copy Hex JSON';
+        }, 2000);
+      });
+    }
+
+    // Function to copy computed HSL JSON data
+    function copyHslJsonData() {
+      const jsonText = document.getElementById('hslJsonData').textContent;
+      navigator.clipboard.writeText(jsonText).then(() => {
+        const button = document.getElementById('copyHslJsonButton');
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+          button.textContent = 'Copy HSL JSON';
+        }, 2000);
+      });
+    }
+
+    // Function to set :root CSS variables from JSON
+    function setRootVariables() {
+      const root = document.documentElement;
+      for (const Color in paletteData) {
+        const variations = paletteData[Color];
+        for (const variation in variations) {
+          const variableName = `--${Color}-${variation}`;
+          root.style.setProperty(variableName, variations[variation]);
+        }
+      }
+    }
+
+    // Function to generate CSS :root variables string (HSL)
+    function generateCssRootVariables() {
+      let cssString = ':root {\n';
+      for (const Color in paletteData) {
+        const variations = paletteData[Color];
+        for (const variation in variations) {
+          const variableName = `--${Color}-${variation}`;
+          cssString += `  ${variableName}: ${variations[variation]};\n`;
+        }
+      }
+      cssString += '}';
+      document.getElementById('cssRootVariables').textContent = cssString;
+    }
+
+    // Function to generate JSON palette data string
+    function generateJsonPaletteData() {
+      const jsonString = JSON.stringify(paletteData, null, 2);
+      document.getElementById('jsonPaletteData').textContent = jsonString;
+    }
+
+    // Function to copy CSS variables (HSL)
+    function copyCssVariables() {
+      const cssText = document.getElementById('cssRootVariables').textContent;
+      navigator.clipboard.writeText(cssText).then(() => {
+        const button = document.getElementById('copyCssButton');
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+          button.textContent = 'Copy HSL CSS Variables';
+        }, 2000);
+      });
+    }
+
+    // Function to copy JSON data
+    function copyJsonData() {
+      const jsonText = document.getElementById('jsonPaletteData').textContent;
+      navigator.clipboard.writeText(jsonText).then(() => {
+        const button = document.getElementById('copyJsonButton');
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+          button.textContent = 'Copy JSON Data';
+        }, 2000);
+      });
+    }
+
+    // Function to get unique variations
+    function getUniqueVariations() {
+      const variationOrder = ['Dark', 'Base', 'Medium', 'Light', 'Lighter'];
+    
+      const variationsSet = new Set();
+      for (const Color in paletteData) {
+        for (const variation in paletteData[Color]) {
+          variationsSet.add(variation);
+        }
+      }
+      return Array.from(variationsSet).sort((a, b) => {
+        return variationOrder.indexOf(a) - variationOrder.indexOf(b);
+      });
+    }
+
+    // Function to populate the palette
+    function populatePalette(isVertical) {
+      const paletteContainer = document.getElementById('palette');
+      paletteContainer.innerHTML = ''; // Clear existing content
+      paletteContainer.className = `palette ${isVertical ? 'vertical' : 'horizontal'}`;
+
+      const Colors = Object.keys(paletteData);
+      const variations = getUniqueVariations();
+
+      if (isVertical) {
+        // Vertical mode: One column per Color
+        paletteContainer.style.gridTemplateColumns = `repeat(${Colors.length}, minmax(150px, 1fr))`;
+        Colors.forEach(Color => {
+          const ColorVariations = paletteData[Color];
+          const ColorColumn = document.createElement('div');
+          ColorColumn.className = 'Color-column';
+
+          let previousL = null; // Track previous Lightness
+          variations.forEach(variation => {
+            const swatch = document.createElement('div');
+            swatch.className = 'swatch';
+            if (ColorVariations[variation]) {
+              const cssVariable = `--${Color}-${variation}`;
+              const { l } = parseHSL(ColorVariations[variation]);
+              const deltaL = previousL === null ? 0 : l - previousL; // ΔL = current L - previous L
+              previousL = l; // Update previousL for next iteration
+              swatch.innerHTML = `
+                <div class="swatch-color" style="background-color: ${ColorVariations[variation]}"></div>
+                <div class="swatch-name">${cssVariable}</div>
+                <div class="swatch-hex">${hslToHex(ColorVariations[variation])}</div>
+                <div class="swatch-hsl">${ColorVariations[variation]}</div>
+                <div class="swatch-delta-l">ΔL: ${deltaL.toFixed(1)}%</div>
+              `;
+            } else {
+              swatch.style.visibility = 'hidden';
+            }
+            ColorColumn.appendChild(swatch);
+          });
+
+          // Add analytics swatch for the group
+          const analytics = calculateGroupAnalytics(ColorVariations, variations);
+          const analyticsSwatch = document.createElement('div');
+          analyticsSwatch.className = 'analytics-swatch';
+          analyticsSwatch.innerHTML = `
+            <div class="analytics-title">${Color}</div>
+            <div class="analytics-data">Avg H: ${analytics.avgH}°</div>
+            <div class="analytics-data">Avg ΔS: ${analytics.avgDeltaS}%</div>
+            <div class="analytics-data">Avg ΔL: ${analytics.avgDeltaL}%</div>
+          `;
+          ColorColumn.appendChild(analyticsSwatch);
+
+          paletteContainer.appendChild(ColorColumn);
+        });
+      } else {
+        // Horizontal mode: One row per Color, one column per variation + analytics
+        paletteContainer.style.gridTemplateColumns = `repeat(${variations.length + 1}, minmax(150px, 1fr))`;
+        Colors.forEach(Color => {
+          const ColorVariations = paletteData[Color];
+          let previousL = null; // Track previous Lightness
+          variations.forEach(variation => {
+            const swatch = document.createElement('div');
+            swatch.className = 'swatch';
+            if (ColorVariations[variation]) {
+              const cssVariable = `--${Color}-${variation}`;
+              const { l } = parseHSL(ColorVariations[variation]);
+              const deltaL = previousL === null ? 0 : l - previousL; // ΔL = current L - previous L
+              previousL = l; // Update previousL for next iteration
+              swatch.innerHTML = `
+                <div class="swatch-color" style="background-color: ${ColorVariations[variation]}"></div>
+                <div class="swatch-name">${cssVariable}</div>
+                <div class="swatch-hex">${hslToHex(ColorVariations[variation])}</div>
+                <div class="swatch-hsl">${ColorVariations[variation]}</div>
+                <div class="swatch-delta-l">ΔL: ${deltaL.toFixed(1)}%</div>
+              `;
+            } else {
+              swatch.style.visibility = 'hidden';
+            }
+            paletteContainer.appendChild(swatch);
+          });
+
+          // Add analytics swatch for the group
+          const analytics = calculateGroupAnalytics(ColorVariations, variations);
+          const analyticsSwatch = document.createElement('div');
+          analyticsSwatch.className = 'analytics-swatch';
+          analyticsSwatch.innerHTML = `
+            <div class="analytics-title">${Color}</div>
+            <div class="analytics-data">Avg H: ${analytics.avgH}°</div>
+            <div class="analytics-data">Avg ΔS: ${analytics.avgDeltaS}%</div>
+            <div class="analytics-data">Avg ΔL: ${analytics.avgDeltaL}%</div>
+          `;
+          paletteContainer.appendChild(analyticsSwatch);
+        });
+      }
+    }
+
+    // Run functions on page load
+    window.onload = () => {
+      setRootVariables();
+      populatePalette(document.getElementById('layoutToggle').checked); // Start in horizontal mode
+      generateCssRootVariables();
+      generateHexCssRootVariables();
+      generateJsonPaletteData();
+      generateHexJsonData();
+      generateHslJsonData();
+      drawHueCircle();
+
+      // Toggle switch event listener
+      document.getElementById('layoutToggle').addEventListener('change', () => {
+        populatePalette(document.getElementById('layoutToggle').checked);
+      });
+    };
+  </script>
+</body>
+</html>

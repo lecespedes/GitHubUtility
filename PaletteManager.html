@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Palette Manager</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #f5f5f5;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      text-shadow: 1px 1px 1px #eee;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      padding: 1rem;
+      align-items: center;
+      background-color: darkgray;
+      margin-bottom: 10px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      padding: 1rem;
+      justify-content: center;
+    }
+
+    .palette-container {
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+      background: #fff;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      display: flex;
+    }
+
+    .axis-swatches {
+      margin-top: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .axis-swatch-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    .axis-swatch-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      width: 20px;
+    }
+
+    .swatch-line {
+      display: flex;
+      flex-wrap: nowrap;
+      position: relative;
+    }
+
+    .swatch {
+      height: 1rem;
+      cursor: pointer;
+      border-right: 1px solid #f5f5f5;
+      position: relative;
+    }
+
+    .caret {
+      position: absolute;
+      top: 1rem;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 5px solid #333;
+      transform: translateX(-50%);
+      display: none;
+    }
+
+    .input-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .input-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .input-group input {
+      width: 100px;
+      padding: 0.5rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    #colorSwatch {
+      width: 75px;
+      height: 50px;
+      border: 1px outset #fff;
+      border-radius: 8px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .palette-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .palette-input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .palette-input-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .palette-input-group input {
+      width: 80px;
+      padding: 0.5rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .saturation-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 0.5rem;
+    }
+
+    .saturation-input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .saturation-input-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .saturation-input-group input {
+      width: 60px;
+      padding: 0.5rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .visibility-controls {
+      position: relative;
+      display: inline-block;
+    }
+
+    .visibility-button {
+      padding: 0.5rem 1rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background: #eee;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .visibility-dropdown {
+      display: none;
+      position: absolute;
+      background: #fff;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      padding: 0.5rem;
+      z-index: 1000;
+      min-width: 200px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .visibility-dropdown.active {
+      display: block;
+    }
+
+    .visibility-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0;
+    }
+
+    .visibility-option input {
+      cursor: pointer;
+    }
+
+    .visibility-option label {
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .switch-label {
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #666;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .palette-swatches {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .primary-container {
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 0.5rem 0;
+    }
+
+    .palette-swatch-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .palette-swatch-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      width: 120px;
+      text-align: right;
+    }
+
+    .palette-swatch-line {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .palette-swatch-column {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .palette-swatch-column .palette-swatch-group {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .palette-swatch-column .palette-swatch-group label {
+      width: auto;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .swatch-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .palette-swatch {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #f5f5f5;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .palette-swatch.primary {
+      border: 2px solid #000;
+    }
+
+    .palette-swatch .hex-code {
+      font-size: 0.6rem;
+      text-shadow: 0 0 2px #000;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .swatch-lightness {
+      font-size: 0.7rem;
+      color: #333;
+      text-align: center;
+    }
+
+    .swatch-info {
+      font-size: 0.8rem;
+      color: #333;
+      font-weight: bold;
+      margin-left: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      text-align: right;
+    }
+
+    .swatch-info span {
+      display: block;
+    }
+
+    .swatch-info input {
+      width: 40px;
+      padding: 0.2rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .palette-swatch-column .swatch-info {
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    .palette-swatch-tooltip {
+      position: absolute;
+      background-color: white;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      pointer-events: none;
+      display: none;
+      z-index: 1000;
+      white-space: nowrap;
+      top: -70px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .palette-swatch:hover .palette-swatch-tooltip {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Color Palette Manager</h1>
+    <div id="colorSwatch"><span class="hex-text"></span></div>
+  </header>
+  <div class="palette-container" id="palette-container">
+    <div class="container">
+      <div>
+        <div id="rgb-swatches" class="axis-swatches"></div>
+        <div class="input-container">
+          <div id="rgb-inputs" class="input-container"></div>
+        </div>
+      </div>
+      <div>
+        <div id="hsl-swatches" class="axis-swatches"></div>
+        <div class="input-container">
+          <div id="hsl-inputs" class="input-container"></div>
+        </div>
+      </div>
+    </div>
+    <div class="palette-controls">
+      <div class="palette-input-group">
+        <label for="lightness-spread">Lightness Spread (%)</label>
+        <input type="number" id="lightness-spread" min="5" max="50" value="20">
+        <span>(5–50%)</span>
+      </div>
+      <div class="palette-switch-container">
+        <span class="switch-label">Rows</span>
+        <label class="switch">
+          <input type="checkbox" id="layout-toggle">
+          <span class="slider"></span>
+        </label>
+        <span class="switch-label">Columns</span>
+      </div>
+      <div class="visibility-controls">
+        <button class="visibility-button" id="visibility-button">Show/Hide Relationships</button>
+        <div class="visibility-dropdown" id="visibility-dropdown"></div>
+      </div>
+    </div>
+    <div class="saturation-controls" id="saturation-controls"></div>
+    <div id="palette-swatches" class="palette-swatches"></div>
+  </div>
+
+  <script type="module">
+    // Color relationships
+    const colorRelationships = {
+      primary: [{ offset: 0, name: 'Primary' }],
+      complementary: [{ offset: 180, name: 'Complementary' }],
+      splitComplementary: [
+        { offset: 150, name: 'Split-Complementary' },
+        { offset: 210, name: 'Split-Complementary' }
+      ],
+      triad: [
+        { offset: 120, name: 'Triad' },
+        { offset: 240, name: 'Triad' }
+      ],
+      tetrad: [
+        { offset: 90, name: 'Tetrad' },
+        { offset: 270, name: 'Tetrad' }
+      ],
+      adjacent: [
+        { offset: 30, name: 'Adjacent' },
+        { offset: -30, name: 'Adjacent' }
+      ]
+    };
+
+    // Define relationship order starting from complementary, clockwise
+    const relationshipOrder = [
+      { key: 'complementary', index: 0, offset: 180, name: 'Complementary', symbol: '◧', group: 'complementary' },
+      { key: 'splitComplementary-2', index: 1, offset: 210, name: '2nd Split-Complementary', symbol: 'Ⓨ', group: 'splitComplementary' },
+      { key: 'triad-2', index: 1, offset: 240, name: '2nd Triad', symbol: '▲', group: 'triad' },
+      { key: 'tetrad-2', index: 1, offset: 270, name: '2nd Tetrad', symbol: '■', group: 'tetrad' },
+      { key: 'adjacent-2', index: 1, offset: -30, name: '2nd Adjacent', symbol: '∠', group: 'adjacent' },
+      { key: 'primary', index: 0, offset: 0, name: 'Primary', symbol: '★', group: 'primary' },
+      { key: 'adjacent-1', index: 0, offset: 30, name: '1st Adjacent', symbol: '∠', group: 'adjacent' },
+      { key: 'tetrad-1', index: 0, offset: 90, name: '1st Tetrad', symbol: '■', group: 'tetrad' },
+      { key: 'triad-1', index: 0, offset: 120, name: '1st Triad', symbol: '▲', group: 'triad' },
+      { key: 'splitComplementary-1', index: 0, offset: 150, name: '1st Split-Complementary', symbol: 'Ⓨ', group: 'splitComplementary' }
+    ];
+
+    // ModelManager
+    class ModelManager {
+      constructor() {
+        this.state = {
+          rgb: { r: 255, g: 0, b: 0 },
+          hsl: { h: 0, s: 100, l: 50 },
+          lightnessSpread: 20,
+          isVerticalLayout: false,
+          saturationOverrides: {
+            complementary: 100,
+            splitComplementary: 100,
+            triad: 100,
+            tetrad: 100,
+            adjacent: 100
+          },
+          individualSaturationOverrides: {},
+          visibleRelationships: {
+            primary: true,
+            complementary: true,
+            'splitComplementary-1': true,
+            'splitComplementary-2': true,
+            'triad-1': true,
+            'triad-2': true,
+            'tetrad-1': true,
+            'tetrad-2': true,
+            'adjacent-1': true,
+            'adjacent-2': true
+          }
+        };
+        this.dom = {
+          colorSwatch: null,
+          paletteSwatches: null,
+          lightnessSpreadInput: null,
+          layoutToggle: null,
+          saturationControls: null,
+          visibilityButton: null,
+          visibilityDropdown: null
+        };
+        this.swatchControlsElements = { rgb: null, hsl: null };
+        this.inputControlsElements = { rgb: null, hsl: null };
+        this.swatchCtrlLength = 475;
+        this.swatchCtrlStep = 2;
+      }
+
+      static parseInput(value, max, defaultValue = 0) {
+        const num = parseFloat(value);
+        return isNaN(num) ? defaultValue : Math.max(0, Math.min(max, num));
+      }
+
+      static rgbToHex(r, g, b) {
+        const toHex = x => {
+          const hex = Math.round(x).toString(16);
+          return hex.length === 1 ? '0' + hex : hex;
+        };
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+      }
+
+      static hexToHSL(hex) {
+        hex = hex.replace('#', '');
+        let r = parseInt(hex.substring(0, 2), 16) / 255;
+        let g = parseInt(hex.substring(2, 4), 16) / 255;
+        let b = parseInt(hex.substring(4, 6), 16) / 255;
+        let max = Math.max(r, g, b);
+        let min = Math.min(r, g, b);
+        let h = 0, s = 0, l = (max + min) / 2;
+        if (max !== min) {
+          let d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+          }
+          h /= 6;
+        }
+        h = h * 360;
+        s = s * 100;
+        l = l * 100;
+        return { h, s, l };
+      }
+
+      static hslToRGB(h, s, l) {
+        h = h / 360;
+        s = s / 100;
+        l = l / 100;
+        let r, g, b;
+        if (s === 0) {
+          r = g = b = l;
+        } else {
+          const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+          };
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          r = hue2rgb(p, q, h + 1/3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1/3);
+        }
+        return {
+          r: Math.round(r * 255),
+          g: Math.round(g * 255),
+          b: Math.round(b * 255)
+        };
+      }
+
+      updateFromInput(mode) {
+        const values = {
+          r: ModelManager.parseInput(this.inputControlsElements.rgb?.querySelector('.input-r')?.value || this.state.rgb.r, 255),
+          g: ModelManager.parseInput(this.inputControlsElements.rgb?.querySelector('.input-g')?.value || this.state.rgb.g, 255),
+          b: ModelManager.parseInput(this.inputControlsElements.rgb?.querySelector('.input-b')?.value || this.state.rgb.b, 255),
+          h: ModelManager.parseInput(this.inputControlsElements.hsl?.querySelector('.input-h')?.value || this.state.hsl.h, 359),
+          s: ModelManager.parseInput(this.inputControlsElements.hsl?.querySelector('.input-s')?.value || this.state.hsl.s, 100),
+          l: ModelManager.parseInput(this.inputControlsElements.hsl?.querySelector('.input-l')?.value || this.state.hsl.l, 100)
+        };
+        let hex;
+        if (mode === 'rgb') {
+          this.state.rgb = { r: values.r, g: values.g, b: values.b };
+          hex = ModelManager.rgbToHex(values.r, values.g, values.b);
+          this.state.hsl = ModelManager.hexToHSL(hex);
+          this.state.hsl.h = parseFloat(this.state.hsl.h);
+          if (isNaN(this.state.hsl.h)) this.state.hsl.h = values.h;
+        } else {
+          this.state.hsl = { h: values.h, s: values.s, l: values.l };
+          this.state.rgb = ModelManager.hslToRGB(values.h, values.s, values.l);
+          hex = ModelManager.rgbToHex(this.state.rgb.r, this.state.rgb.g, this.state.rgb.b);
+        }
+
+        if (this.inputControlsElements.rgb) {
+          this.inputControlsElements.rgb.querySelector('.input-r').value = this.state.rgb.r;
+          this.inputControlsElements.rgb.querySelector('.input-g').value = this.state.rgb.g;
+          this.inputControlsElements.rgb.querySelector('.input-b').value = this.state.rgb.b;
+        }
+        if (this.inputControlsElements.hsl) {
+          this.inputControlsElements.hsl.querySelector('.input-h').value = Math.round(this.state.hsl.h);
+          this.inputControlsElements.hsl.querySelector('.input-s').value = Math.round(this.state.hsl.s);
+          this.inputControlsElements.hsl.querySelector('.input-l').value = Math.round(this.state.hsl.l);
+        }
+
+        if (this.dom.colorSwatch) {
+          const hsl = ModelManager.hexToHSL(hex);
+          const swatchLightness = parseFloat(hsl.l);
+          const textLightness = swatchLightness > 70 ? 0 : 100;
+          const textRGB = ModelManager.hslToRGB(0, 0, textLightness);
+          this.dom.colorSwatch.style.backgroundColor = hex;
+          this.dom.colorSwatch.querySelector('.hex-text').textContent = hex.toUpperCase();
+          this.dom.colorSwatch.querySelector('.hex-text').style.color = ModelManager.rgbToHex(textRGB.r, textRGB.g, textRGB.b);
+        }
+
+        // Reset saturation overrides when primary color changes
+        Object.keys(this.state.saturationOverrides).forEach(key => {
+          this.state.saturationOverrides[key] = this.state.hsl.s;
+        });
+        this.state.individualSaturationOverrides = {};
+        this.updateSaturationInputs();
+
+        this.updateSwatches();
+        this.createPalette();
+      }
+
+      swatchControls(type, element) {
+        element.innerHTML = '';
+        this.swatchControlsElements[type] = element;
+        const components = type === 'rgb' ? ['r', 'g', 'b'] : ['h', 's', 'l'];
+        const scales = type === 'rgb' ? [255, 255, 255] : [359, 100, 100];
+        const labels = type === 'rgb' ? ['R', 'G', 'B'] : ['H', 'S', 'L'];
+
+        components.forEach((comp, index) => {
+          const group = document.createElement('div');
+          group.className = 'axis-swatch-group';
+          const label = document.createElement('label');
+          label.textContent = labels[index];
+          const swatchLine = document.createElement('div');
+          swatchLine.className = `swatch-line swatch-${comp}`;
+          swatchLine.style.width = `${this.swatchCtrlLength}px`;
+          group.appendChild(label);
+          group.appendChild(swatchLine);
+          element.appendChild(group);
+        });
+
+        this.updateSwatches();
+
+        components.forEach(comp => {
+          const swatchLine = element.querySelector(`.swatch-${comp}`);
+          swatchLine.addEventListener('click', event => {
+            if (event.target.classList.contains('swatch')) {
+              const value = event.target.dataset[comp];
+              const input = this.inputControlsElements[type]?.querySelector(`.input-${comp}`);
+              if (input) {
+                input.value = value;
+                this.updateFromInput(type);
+              }
+            }
+          });
+        });
+      }
+
+      inputControls(type, element) {
+        element.innerHTML = '';
+        this.inputControlsElements[type] = element;
+        const components = type === 'rgb' ? ['r', 'g', 'b'] : ['h', 's', 'l'];
+        const labels = type === 'rgb' ? ['Red', 'Green', 'Blue'] : ['Hue', 'Saturation', 'Lightness'];
+        const maxValues = type === 'rgb' ? [255, 255, 255] : [359, 100, 100];
+        const ranges = type === 'rgb' ? ['(0–255)', '(0–255)', '(0–255)'] : ['(0–359°)', '(0–100%)', '(0–100%)'];
+
+        components.forEach((comp, index) => {
+          const group = document.createElement('div');
+          group.className = 'input-group';
+          const label = document.createElement('label');
+          label.textContent = labels[index];
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.className = `input-${comp}`;
+          input.min = '0';
+          input.max = maxValues[index];
+          input.value = type === 'rgb' ? this.state.rgb[comp] : this.state.hsl[comp];
+          input.addEventListener('input', () => this.updateFromInput(type));
+          const range = document.createTextNode(ranges[index]);
+          group.appendChild(label);
+          group.appendChild(input);
+          group.appendChild(range);
+          element.appendChild(group);
+        });
+      }
+
+      currentSwatch(element) {
+        this.dom.colorSwatch = element;
+        this.updateFromInput('rgb');
+      }
+
+      updateSaturationInputs() {
+        if (!this.dom.saturationControls) return;
+        this.dom.saturationControls.innerHTML = '';
+
+        const groups = [...new Set(relationshipOrder.map(rel => rel.group).filter(g => g !== 'primary'))];
+        groups.forEach(group => {
+          const groupName = group.charAt(0).toUpperCase() + group.slice(1).replace(/([A-Z])/g, ' $1');
+          const groupEl = document.createElement('div');
+          groupEl.className = 'saturation-input-group';
+
+          const label = document.createElement('label');
+          label.textContent = `${groupName} S (%)`;
+          groupEl.appendChild(label);
+
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.min = '0';
+          input.max = '100';
+          input.value = this.state.saturationOverrides[group];
+          input.dataset.group = group;
+          input.addEventListener('input', () => {
+            this.state.saturationOverrides[group] = ModelManager.parseInput(input.value, 100, this.state.hsl.s);
+            // Clear individual overrides for all relationships in this group
+            relationshipOrder.forEach(rel => {
+              if (rel.group === group) {
+                delete this.state.individualSaturationOverrides[rel.key];
+              }
+            });
+            this.createPalette();
+          });
+
+          const range = document.createTextNode('(0–100%)');
+          groupEl.appendChild(input);
+          groupEl.appendChild(range);
+
+          this.dom.saturationControls.appendChild(groupEl);
+        });
+      }
+
+      updateVisibilityDropdown() {
+        if (!this.dom.visibilityDropdown) return;
+        this.dom.visibilityDropdown.innerHTML = '';
+
+        relationshipOrder.forEach(rel => {
+          const option = document.createElement('div');
+          option.className = 'visibility-option';
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = this.state.visibleRelationships[rel.key];
+          checkbox.dataset.key = rel.key;
+          checkbox.addEventListener('change', () => {
+            this.state.visibleRelationships[rel.key] = checkbox.checked;
+            this.createPalette();
+          });
+
+          const label = document.createElement('label');
+          label.textContent = `${rel.symbol} ${rel.name}`;
+
+          option.appendChild(checkbox);
+          option.appendChild(label);
+          this.dom.visibilityDropdown.appendChild(option);
+        });
+      }
+
+      paletteControls(swatchesElement, spreadInputElement, layoutToggleElement, saturationControlsElement, visibilityButtonElement, visibilityDropdownElement) {
+        this.dom.paletteSwatches = swatchesElement;
+        this.dom.lightnessSpreadInput = spreadInputElement;
+        this.dom.layoutToggle = layoutToggleElement;
+        this.dom.saturationControls = saturationControlsElement;
+        this.dom.visibilityButton = visibilityButtonElement;
+        this.dom.visibilityDropdown = visibilityDropdownElement;
+
+        spreadInputElement.addEventListener('input', () => {
+          this.state.lightnessSpread = ModelManager.parseInput(spreadInputElement.value, 50, 20);
+          this.createPalette();
+        });
+
+        layoutToggleElement.addEventListener('change', () => {
+          this.state.isVerticalLayout = layoutToggleElement.checked;
+          this.createPalette();
+        });
+
+        visibilityButtonElement.addEventListener('click', () => {
+          this.dom.visibilityDropdown.classList.toggle('active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (event) => {
+          if (!this.dom.visibilityControls || !this.dom.visibilityDropdown) return;
+          if (!this.dom.visibilityControls.contains(event.target)) {
+            this.dom.visibilityDropdown.classList.remove('active');
+          }
+        });
+
+        this.updateSaturationInputs();
+        this.updateVisibilityDropdown();
+        this.createPalette();
+      }
+
+      updateSwatches() {
+        const values = {
+          r: this.state.rgb.r,
+          g: this.state.rgb.g,
+          b: this.state.rgb.b,
+          h: this.state.hsl.h,
+          s: this.state.hsl.s,
+          l: this.state.hsl.l
+        };
+
+        const swatchCtrlLength = Math.max(100, this.swatchCtrlLength);
+        const numSwatches = (100 / this.swatchCtrlStep) + 1;
+        const swatchWidth = Math.round(swatchCtrlLength / numSwatches);
+
+        ['rgb', 'hsl'].forEach(type => {
+          const element = this.swatchControlsElements[type];
+          if (!element) return;
+          const components = type === 'rgb' ? ['r', 'g', 'b'] : ['h', 's', 'l'];
+          const scales = type === 'rgb' ? [255, 255, 255] : [359, 100, 100];
+          components.forEach((comp, index) => {
+            const swatchLine = element.querySelector(`.swatch-${comp}`);
+            if (!swatchLine) return;
+            swatchLine.innerHTML = '';
+            for (let i = 0; i < numSwatches; i++) {
+              const normalizedVal = i * this.swatchCtrlStep;
+              const val = (scales[index] * normalizedVal) / 100;
+              const colorValues = { ...values };
+              colorValues[comp] = Math.round(val);
+              const rgb = type === 'rgb'
+                ? colorValues
+                : ModelManager.hslToRGB(colorValues.h, colorValues.s, colorValues.l);
+              const hex = ModelManager.rgbToHex(Math.round(rgb.r), Math.round(rgb.g), Math.round(rgb.b));
+              const swatch = document.createElement('div');
+              swatch.className = 'swatch';
+              swatch.style.backgroundColor = hex;
+              swatch.style.width = `${swatchWidth}px`;
+              swatch.title = Math.round(val);
+              swatch.dataset[comp] = Math.round(val);
+              const caret = document.createElement('div');
+              caret.className = 'caret';
+              swatch.appendChild(caret);
+              swatchLine.appendChild(swatch);
+            }
+
+            const swatches = swatchLine.querySelectorAll('.swatch');
+            const step = scales[index] / (swatches.length - 1);
+            swatches.forEach((swatchEl, i) => {
+              const swatchValue = i * step;
+              const caret = swatchEl.querySelector('.caret');
+              const isActive = values[comp] >= swatchValue && values[comp] < (swatchValue + step) ||
+                (i === swatches.length - 1 && values[comp] >= swatchValue);
+              caret.style.display = isActive ? 'block' : 'none';
+            });
+          });
+        });
+      }
+
+      createPalette() {
+        if (!this.dom.paletteSwatches) return;
+        this.dom.paletteSwatches.innerHTML = '';
+
+        const { h, s, l } = this.state.hsl;
+        const spread = this.state.lightnessSpread;
+        const isVertical = this.state.isVerticalLayout;
+
+        const visibleRels = relationshipOrder.filter(rel => this.state.visibleRelationships[rel.key]);
+        this.dom.paletteSwatches.style.gridTemplateColumns = isVertical ? `repeat(${visibleRels.length}, minmax(150px, 1fr))` : 'auto';
+
+        visibleRels.forEach(rel => {
+          const group = document.createElement('div');
+          group.className = 'palette-swatch-group';
+
+          const label = document.createElement('label');
+          label.textContent = `${rel.symbol} ${rel.name}`;
+          group.appendChild(label);
+
+          const swatchContainer = document.createElement('div');
+          swatchContainer.className = isVertical ? 'palette-swatch-column' : 'palette-swatch-line';
+
+          const swatches = [];
+          const relHue = (h + rel.offset) % 360;
+          let currentL = Math.round(l);
+          const lightnessSteps = [];
+
+          // Iterate up from current lightness
+          for (let stepL = currentL; stepL <= 100; stepL += spread) {
+            lightnessSteps.push(Math.min(stepL, 100));
+          }
+          // Iterate down from current lightness
+          for (let stepL = currentL - spread; stepL >= 0; stepL -= spread) {
+            lightnessSteps.push(Math.max(stepL, 0));
+          }
+
+          lightnessSteps.sort((a, b) => a - b);
+
+          const saturation = this.state.individualSaturationOverrides[rel.key] !== undefined
+            ? this.state.individualSaturationOverrides[rel.key]
+            : rel.key === 'primary'
+              ? s
+              : this.state.saturationOverrides[rel.group] || s;
+
+          lightnessSteps.forEach(stepL => {
+            const rgb = ModelManager.hslToRGB(relHue, saturation, stepL);
+            const hex = ModelManager.rgbToHex(rgb.r, rgb.g, rgb.b);
+            swatches.push({
+              h: relHue,
+              s: saturation,
+              l: stepL,
+              hex,
+              isPrimary: rel.key === 'primary' && Math.abs(stepL - l) < 0.01,
+              relName: rel.name
+            });
+          });
+
+          console.log(`Generating ${swatches.length} swatches for ${rel.name}`);
+
+          swatches.forEach(swatch => {
+            const swatchWrapper = document.createElement('div');
+            swatchWrapper.className = 'swatch-wrapper';
+
+            const swatchEl = document.createElement('div');
+            swatchEl.className = 'palette-swatch';
+            if (swatch.isPrimary) swatchEl.classList.add('primary');
+            swatchEl.style.backgroundColor = swatch.hex;
+
+            const hexCode = document.createElement('span');
+            hexCode.className = 'hex-code';
+            hexCode.textContent = swatch.hex.toUpperCase();
+            const swatchLightness = swatch.l;
+            const textLightness = swatchLightness > 70 ? 0 : 100;
+            const textRGB = ModelManager.hslToRGB(0, 0, textLightness);
+            hexCode.style.color = ModelManager.rgbToHex(textRGB.r, textRGB.g, textRGB.b);
+            swatchEl.appendChild(hexCode);
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'palette-swatch-tooltip';
+            tooltip.textContent = `${swatch.relName}\n${swatch.hex.toUpperCase()}\nhsl(${Math.round(swatch.h)}, ${Math.round(swatch.s)}%, ${Math.round(swatch.l)}%)`;
+            swatchEl.appendChild(tooltip);
+
+            const lightness = document.createElement('div');
+            lightness.className = 'swatch-lightness';
+            lightness.textContent = `${Math.round(swatch.l)}%`;
+            swatchWrapper.appendChild(swatchEl);
+            swatchWrapper.appendChild(lightness);
+
+            swatchContainer.appendChild(swatchWrapper);
+          });
+
+          // Add hue and saturation at the end
+          const infoEl = document.createElement('div');
+          infoEl.className = 'swatch-info';
+          const hueSpan = document.createElement('span');
+          hueSpan.textContent = `H: ${Math.round(relHue)}°`;
+          const satInput = document.createElement('input');
+          satInput.type = 'number';
+          satInput.min = '0';
+          satInput.max = '100';
+          satInput.value = Math.round(saturation);
+          satInput.dataset.key = rel.key;
+          satInput.addEventListener('input', () => {
+            this.state.individualSaturationOverrides[rel.key] = ModelManager.parseInput(satInput.value, 100, this.state.saturationOverrides[rel.group] || s);
+            this.createPalette();
+          });
+          infoEl.appendChild(hueSpan);
+          infoEl.appendChild(satInput);
+          swatchContainer.appendChild(infoEl);
+
+          group.appendChild(swatchContainer);
+
+          // Wrap primary group in primary-container
+          if (rel.key === 'primary') {
+            const groupWrapper = document.createElement('div');
+            groupWrapper.className = 'primary-container';
+            groupWrapper.appendChild(group);
+            this.dom.paletteSwatches.appendChild(groupWrapper);
+          } else {
+            this.dom.paletteSwatches.appendChild(group);
+          }
+        });
+      }
+    }
+
+    // DOMContentLoaded to ensure DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const dom = {
+        paletteContainer: document.getElementById('palette-container'),
+        rgbInputs: document.getElementById('rgb-inputs'),
+        hslInputs: document.getElementById('hsl-inputs'),
+        rgbSwatches: document.getElementById('rgb-swatches'),
+        hslSwatches: document.getElementById('hsl-swatches'),
+        colorSwatch: document.getElementById('colorSwatch'),
+        paletteSwatches: document.getElementById('palette-swatches'),
+        lightnessSpread: document.getElementById('lightness-spread'),
+        layoutToggle: document.getElementById('layout-toggle'),
+        saturationControls: document.getElementById('saturation-controls'),
+        visibilityButton: document.getElementById('visibility-button'),
+        visibilityDropdown: document.getElementById('visibility-dropdown')
+      };
+
+      const modelManager = new ModelManager();
+
+      modelManager.inputControls('rgb', dom.rgbInputs);
+      modelManager.inputControls('hsl', dom.hslInputs);
+      modelManager.swatchControls('rgb', dom.rgbSwatches);
+      modelManager.swatchControls('hsl', dom.hslSwatches);
+      modelManager.currentSwatch(dom.colorSwatch);
+      modelManager.paletteControls(dom.paletteSwatches, dom.lightnessSpread, dom.layoutToggle, dom.saturationControls, dom.visibilityButton, dom.visibilityDropdown);
+    });
+  </script>
+</body>
+</html>

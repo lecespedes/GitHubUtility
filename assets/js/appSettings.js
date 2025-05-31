@@ -70,7 +70,24 @@ export const appSettings = { //** works as a named export as a mutable object; u
                 'Versions/'
             ],
             extensionsToFilter: ['.md', '.jpg', '.jpeg', '.png', '.svg', '.eot', '.ttf', '.woff', '.woff2']
-        }
+        },
+         {
+            OWNER: 'nolimits4web',
+            REPO: 'swiper',
+            BRANCH: 'master',
+            root: null,
+            EXCLUDE: [
+                '.github/',
+                ".nova/",
+                ".vscode/",
+                'demos/',
+                'DashboardTemplates/',
+                'Filepaths.php',
+                '.gitignore',
+                'favicon.ico',
+            ],
+            extensionsToFilter: ['.md', '.jpg', '.jpeg', '.png', '.svg', '.eot', '.ttf', '.woff', '.woff2']
+        },
     ]
 };
 //export default settings; //** works as a default named export as a mutable object can have any name must be after object declaration; use import <name> from 'settings';

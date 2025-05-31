@@ -1,3 +1,26 @@
+:root {
+  --Primary-Accent-Dark: #178282;
+  --Primary-Accent-Base: #26d9d9;
+  --Primary-Accent-Medium: #93ecec;
+  --Primary-Accent-Light: #d4f7f7;
+  --Primary-Dark: #004080;
+  --Primary-Base: #007fff;
+  --Primary-Medium: #80bfff;
+  --Primary-Light: #cce5ff;
+  --Accent-Dark: #cc6600;
+  --Accent-Base: #ff8000;
+  --Accent-Medium: #ffbf80;
+  --Accent-Light: #ffe6cc;
+  --Secondary-Dark: #8a8a8a;
+  --Secondary-Base: #b0b0b0;
+  --Secondary-Medium: #d6d6d6;
+  --Secondary-Light: #f0f0f0;
+  --Secondary-Accent-Dark: #704359;
+  --Secondary-Accent-Base: #9f6080;
+  --Secondary-Accent-Medium: #c69fb3;
+  --Secondary-Accent-Light: #ecdfe6;
+  --Text-Base: #333333;
+}
 html, body {
     height: 100%;
 }
@@ -12,11 +35,16 @@ h1 {
 .output {
     font-family: 'Courier New', Courier, monospace;
     background-color: #fff;
-    border: 1px solid #ddd;
+    border: 1px inset #fff;
     padding: 15px;
     border-radius: 5px;
     overflow-x: auto;
     margin: 0;
+    flex-grow: 1;
+}
+#code-output {
+    width: 70%;
+    overflow-y: auto;
 }
 .error {
     color: red;
@@ -56,23 +84,24 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 2px groove #ddd;
     margin-bottom: 10px;
 }
 .tab-group {
     display: flex;
+    padding-left: 10px;
 }
 .tab-ctrl-btn {
     padding: 10px 20px;
     cursor: pointer;
     background-color: #e0e0e0;
-    border: 1px solid #ddd;
+    border: 1px outset #fff;
     border-bottom: none;
-    margin-right: 5px;
-    border-radius: 5px 5px 0 0;
+    margin-right: 10px;
+    border-radius: 10px 10px 0 0;
 }
 .tab-ctrl-btn.active {
-    background-color: #007bff;
+    background-color: var(--Primary-Base);
     color: white;
     font-weight: bold;
 }
@@ -92,7 +121,11 @@ h1 {
     display: none;
 }
 .tab-content.active {
-    display: block;
+    display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  height: 100%;
+  overflow: auto;
 }
 #result {
     white-space: pre-line;
@@ -113,13 +146,13 @@ h1 {
     max-width: 1200px;
     margin: 0 auto;
     background-color: #f4f4f4;
-    min-height: 100vh;
+    height: 100vh;
 }
 .main-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #007bff;
+    background-color: var(--Primary-Dark);
     padding: 10px;
     border-radius: 5px;
 }
@@ -141,12 +174,12 @@ h1 {
     line-height: 36px;
     display: flex;
     align-items: center;
+    gap: 10px;
 }
 .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
 }
 #popup-message {
     font-size: 16px;
@@ -162,7 +195,7 @@ h1 {
     z-index: 1000;
 }
 #profile, #file-type {
-    padding: 10px;
+    padding: 5px;
     border-radius: 5px;
     border: 1px solid #ddd;
     background-color: #fff;
@@ -176,8 +209,9 @@ h1 {
     padding: 10px 0;
     font-size: 16px;
 }
-.profile-select label, .custom-root label {
-    margin-right: 10px;
+.profile-select label{
+    color:var(--Primary-Light);
+    font-weight: bold;
 }
 #custom-root {
     padding: 10px;
@@ -189,7 +223,7 @@ h1 {
 #github-link {
     margin-left: auto;
     font-size: 16px;
-    color: #0056b3;
+    color: #a4d0ff;
     text-decoration: none;
 }
 #github-link:hover {
@@ -202,33 +236,28 @@ h1 {
 .content {
     flex-grow: 1;
     padding: 0 20px 20px 20px;
-    border-left: 2px solid lightgray;
-    border-right: 2px solid lightgray;
-    border-bottom: 2px solid lightgray;
+    border-left: 2px outset lightgray;
+    border-right: 2px outset lightgray;
+    border-bottom: 3px outset lightgray;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
 }
 .code-panel-container {
     display: flex;
+    overflow-x: auto;
+    flex-grow: 1;
     gap: 10px;
-    height: 500px;
 }
 #file-list {
     width: 30%;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px inset #fff;
     border-radius: 5px;
     background-color: #fff;
     font-size: 14px;
-}
-#code-output {
-    width: 70%;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    padding: 15px;
-    border-radius: 5px;
-    overflow-x: auto;
-    overflow-y: auto;
-    font-family: 'Courier New', Courier, monospace;
-    margin: 0;
 }
 .controls {
     display: flex;

@@ -15,7 +15,7 @@ import { getApiFunctions } from './apiFunctions.js';
  * @param {Object} state - Application state (e.g., activeProfile, fileContents).
  * @param {Object} dom - DOM elements for UI interaction.
  * @returns {Object} Object containing application functions.
- * Used in `appController.js` to initialize functions.
+ * Used in `appConfig.js` to initialize functions.
  */
 export function getAppFunctions(settings, state, dom) {
     appSettings = settings;
@@ -26,16 +26,170 @@ export function getAppFunctions(settings, state, dom) {
 
     return {
         LoadPaths,
-        DisplayFileContent,
+        LoadCode,
+        getFilePanel,
+        getDirectoryPanel,
+        getCodePanel,
         createJsonBlobUrl,
         copyPathsToClipboard,
         savePathsAsJson,
         handleProfileChange,
-        updateCodeOutput,
-        getFilePanel,
-        getDirectoryPanel,
-        DisplayPopUp
+        DisplayPopUp,
+        getFileList,
+        getProfileOptions,
+        getFileTypeOptions,
+        getSelectOptionsHTML,
+        getCachePanel,
+        selectTab
     };
+
+    /**
+     * Selects a tab and updates the UI.
+     * @param {string} tabClass - Class name of tab controls.
+     * @param {number} index - Index of the tab to select.
+     * @returns {void}
+     */
+    function selectTab(tabClass, index) {
+        const tabs = document.querySelectorAll(`.${tabClass}.tab-ctrl-btn`);
+        const panels = document.querySelectorAll(`.${tabClass}.tab-content`);
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+        tabs[index].classList.add('active');
+        panels[index].classList.add('active');
+    }
+    /**
+     * Returns a list of files for the select element.
+     * @returns {Object} Object mapping file paths to display labels, including 'All' option.
+     */
+    function getFileList() {
+        const filePaths = cacheMan.files;
+        const data = { 'All': 'All' };
+        filePaths.forEach(path => {data[path] = path;});
+        return data;
+    }
+
+    /**
+     * Prepares data for selProfile select options.
+     * @returns {Object} Object mapping profile indices to display names.
+     */
+    function getProfileOptions() {
+        const data = {};
+        appSettings.profiles.forEach((profile, index) => {
+            data[index] = `${profile.OWNER}/${profile.REPO}/${profile.BRANCH}`;
+        });
+        return data;
+    }
+
+    /**
+     * Prepares data for selFileType select options.
+     * @returns {Object} Object mapping file extensions to themselves.
+     */
+    function getFileTypeOptions() {
+        return Object.fromEntries(appSettings.fileTypes.map(ext => [ext, ext]));
+    }
+
+    /**
+     * Generates HTML for select element options.
+     * @param {HTMLSelectElement} element - The select element to populate.
+     * @param {Object} data - Object with key/value pairs for option values and labels.
+     * @param {string} [defaultValue=''] - The default selected value.
+     * @returns {string} HTML string of option elements.
+     */
+    function getSelectOptionsHTML(data, defaultValue = '') {
+        const options = Object.entries(data).map(([value, label]) => 
+            `<option value="${value}"${value == defaultValue ? ' selected' : ''}>${label}</option>`
+        );
+        return options.join('');
+    }
+
+    /**
+     * Returns formatted content for the Cache panel from cache state.
+     * @returns {string} Formatted cache data string.
+     * Used in `config.divs` for `divCacheOutput`.
+     */
+    function getCachePanel() {
+        const pathsData = cacheMan.paths;
+        const filePaths = cacheMan.files;
+        const paths = Array.isArray(pathsData) ? pathsData : pathsData?.paths || [];
+        return [
+            'Cached Paths:',
+            paths.length > 0 ? JSON.stringify(paths, null, 2) : 'None',
+            '',
+            'Cached Files:',
+            filePaths.length > 0 ? filePaths.join('\n') : 'None'
+        ].join('\n');
+    }
+
+
+     /**
+     * Fetches and displays file paths and directory structure in their panels.
+     * @returns {Promise<void>} No return value.
+     * Used by `btnLoadFiles` event listener.
+     */
+     async function LoadPaths() {
+        DOM.btnLoadFiles.disabled = true;
+        try {
+            const cachedPaths = cacheMan.paths;
+            DisplayPopUp(cachedPaths ? 'Loading paths from cache' : 'Loading paths from GitHub');
+            let result = cachedPaths || await api.fetchFilePaths();
+            if (!cachedPaths) {
+                cacheMan.setPaths(result);
+            }
+        } catch (error) {
+            const errorMessage = `Error in Function LoadPaths: ${error.message}`;
+            console.error(errorMessage);
+            DOM.divError.textContent = errorMessage;
+        } 
+        DOM.btnLoadFiles.disabled = false;
+    }
+     /**
+     * Fetches and displays file contents in the Code panel.
+     * @returns {Promise<void>} No return value.
+     * Used by `btnLoadCode`, `selFileType` event listeners.
+     */
+    async function LoadCode() {
+        DOM.btnLoadCode.disabled = true;
+        try {
+            await LoadPaths();
+
+            const cachedPaths = cacheMan.paths;
+            if (Array.isArray(cachedPaths)) {
+                DOM.divError.textContent = cachedPaths.join('\n');
+                return; 
+            }
+            let filteredPaths = cachedPaths.paths;
+            if (DOM.ckbFilterExtensions.checked) {
+                filteredPaths = filteredPaths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
+            }
+            filteredPaths = filteredPaths.filter(path => path.toLowerCase().endsWith(appState.selectedFileType));
+
+            let fetchedFromApi = false;
+            for (let i = 0; i < filteredPaths.length; i++) {
+                const path = filteredPaths[i];
+                document.dispatchEvent(new CustomEvent('FileLoaded', {
+                    detail: { popupMessage: `Fetching file ${i + 1} of ${filteredPaths.length}` }
+                }));
+                let content = cacheMan.getFile(path);
+                if (!content) {
+                    content = await api.fetchFileContent(path);
+                    cacheMan.setFile(path, content);
+                    fetchedFromApi = true;
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            if (fetchedFromApi) {
+                const options = getFileList();
+                document.dispatchEvent(new CustomEvent('FilesLoaded', {detail: { options }}));
+            }
+
+        } catch (error) {
+            const errorMessage = `Error in Function LoadCode: ${error.message}`;
+            console.error(errorMessage);
+            DOM.divError.textContent = errorMessage;
+        } 
+        DOM.btnLoadCode.disabled = false;
+    }
 
     /**
      * Returns formatted content for the File List panel from cache.
@@ -43,18 +197,19 @@ export function getAppFunctions(settings, state, dom) {
      * Used in `config.divs` for `divFileListOutput`.
      */
     function getFilePanel() {
-        console.log('Entering getFilePanel');
-        const cachedPaths = cacheMan.getCachePaths();
-        if (!cachedPaths) {
+        const cachedPaths = cacheMan.paths;
+        if (Array.isArray(cachedPaths)) {
+            return cachedPaths.join('\n');
+        }
+        if (!cachedPaths || !cachedPaths.paths) {
             return 'Click <Load Files & Directory> to load the data.';
         }
         try {
-            const paths = Array.isArray(cachedPaths) ? cachedPaths : cachedPaths.paths;
-            let filteredPaths = paths;
+            let filteredPaths = cachedPaths.paths;
             if (DOM.ckbFilterExtensions.checked) {
-                filteredPaths = paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
+                filteredPaths = cachedPaths.paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
             }
-            DOM.divResult.textContent = `${filteredPaths.length} items returned. ${paths.length - filteredPaths.length} items filtered out.`;
+            DOM.divResult.textContent = `${filteredPaths.length} items returned. ${cachedPaths.paths.length - filteredPaths.length} items filtered out.`;
             return filteredPaths.join('\n');
         } catch (error) {
             const errorMessage = `Error in Function getFilePanel: ${error.message}`;
@@ -70,18 +225,17 @@ export function getAppFunctions(settings, state, dom) {
      * Used in `config.divs` for `divDirectoryOutput`.
      */
     function getDirectoryPanel() {
-        console.log('Entering getDirectoryPanel');
-        const cachedPaths = cacheMan.getCachePaths();
-        if (!cachedPaths) {
+        const cachedPaths = cacheMan.paths;
+        if (Array.isArray(cachedPaths)) {
+            return cachedPaths.join('\n');
+        }
+        if (!cachedPaths || !cachedPaths.paths) {
             return 'Click <Load Files & Directory> to load the data.';
         }
         try {
-            if (Array.isArray(cachedPaths)) {
-                return cachedPaths.join('\n');
-            }
             let paths = cachedPaths.paths;
             if (DOM.ckbFilterExtensions.checked) {
-                paths = paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
+                paths = cachedPaths.paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
             }
             const structure = buildJsonStructure(paths, appState.activeProfile.root, DOM.ckbFullPaths.checked);
             return JSON.stringify(structure, null, 2);
@@ -92,127 +246,30 @@ export function getAppFunctions(settings, state, dom) {
             return errorMessage;
         }
     }
-
     /**
-     * Fetches and displays file contents in the Code panel.
-     * @returns {Promise<void>} No return value.
-     * Used by `btnLoadCode`, `selFileType` event listeners.
+     * Returns formatted content for the Code panel from cache.
+     * @param {string} selectedFile - The selected file path or 'All'.
+     * @returns {string} Formatted file content or error message.
+     * Used in `divCodeOutput` props.textContent.
      */
-    async function DisplayFileContent() {
-        try {
-            DOM.btnLoadCode.disabled = true;
-            DOM.divCodeOutput.textContent = '';
-            DOM.selFileList.innerHTML = '';
-            appState.fileContents = [];
-            DOM.divError.textContent = '';
-            //DOM.divLoading.style.display = 'block';
+    function getCodePanel(selectedFile) {
+        const filePaths = cacheMan.files;
+        console.log("Get CodePanel for: "+selectedFile);
+        if (!selectedFile || filePaths.length === 0) {return 'Click <Load Code> to load the data.';}
 
-            await LoadPaths();
-
-            const cachedPaths = cacheMan.getCachePaths();
-            if (Array.isArray(cachedPaths)) {
-                DOM.divError.textContent = cachedPaths.join('\n');
-                return; 
-            }
-            let paths = cachedPaths.paths;
-            let filteredPaths = paths;
-            if (DOM.ckbFilterExtensions.checked) {
-                filteredPaths = paths.filter(path => !appState.activeProfile.extensionsToFilter.some(ext => path.toLowerCase().endsWith(ext)));
-            }
-            filteredPaths = paths.filter(path => path.toLowerCase().endsWith(appState.selectedFileType));
-
-            const errors = [];
-            let fetchedFromApi = false;
-            for (let i = 0; i < filteredPaths.length; i++) {
-                const path = filteredPaths[i];
-                //DOM.divLoading.textContent = `Fetching file ${i + 1} of ${filteredPaths.length}`;
-                let content = cacheMan.getCacheFile(path);
-                if (!content) {
-                    content = await api.fetchFileContent(path);
-                    cacheMan.setCacheFile(path, content);
-                    fetchedFromApi = true;
-                }
-                appState.fileContents.push({ path, content });
-                if (content.startsWith('Error')) {
-                    errors.push(`Error fetching ${path}: ${content}`);
-                }
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-
-            if (fetchedFromApi) {
-                const options = cacheMan.getFileList();
-                document.dispatchEvent(new CustomEvent('FilesLoaded', {
-                    detail: { options }
-                }));
-            }
-
-            updateCodeOutput();
-            if (errors.length > 0) {
-                DOM.divError.textContent = errors.join('\n');
-            }
-            //DOM.divLoading.textContent = 'Loading...';
-            const rateLimitElement = document.getElementById('rate-limit-info');
-            rateLimitElement.textContent = `API Limit: ${appState.apiLimit} until ${appState.apiLimitResetDate}`;
-            DOM.divResult.textContent = `${filteredPaths.length} items loaded. ${errors.length} items failed.`;
-        } catch (error) {
-            const errorMessage = `Error in Function DisplayFileContent: ${error.message}`;
-            console.error(errorMessage);
-            DOM.divCodeOutput.textContent = errorMessage;
-            DOM.divCodeOutput.style.whiteSpace = '';
-            DOM.divError.textContent = errorMessage;
-            DOM.selFileList.innerHTML = '';
-        } finally {
-           //DOM.divLoading.style.display = 'none';
-            DOM.btnLoadCode.disabled = false;
-            console.log('Exiting DisplayFileContent');
-        }
-    }
-
-    /**
-     * Updates the Code panel with selected file content.
-     * @returns {void} No return value.
-     * Used by `selFileList`, `selFileType` event listeners, `DisplayFileContent`.
-     */
-    function updateCodeOutput() {
-        console.log('Updating code output');
-        const selectedFile = DOM.selFileList.value;
-        if (!appState.fileContents.length) {
-            DOM.divCodeOutput.textContent = 'Click <Load Code> to load the data.';
-            DOM.divCodeOutput.style.whiteSpace = '';
-            return;
-        }
-        DOM.divCodeOutput.style.whiteSpace = 'pre';
         if (selectedFile === 'All') {
-            DOM.divCodeOutput.textContent = appState.fileContents.map(fc => `********** ${fc.path} **********\n${fc.content}\n---`).join('\n');
+            const filesContent = filePaths
+                .map(path => {
+                    const content = cacheMan.getFile(path);
+                    return content ? `********** ${path} **********\n${content}\n---` : null;
+                })
+                .filter(Boolean)
+                .join('\n');
+            return filesContent || 'No files found in cache.';
         } else {
-            const file = appState.fileContents.find(fc => fc.path === selectedFile);
-            DOM.divCodeOutput.textContent = file ? `********** ${file.path} **********\n${file.content}` : 'File not found.';
+            const content = cacheMan.getFile(selectedFile);
+            return content ? `********** ${selectedFile} **********\n${content}` : 'File not found.';
         }
-    }
-
-    /**
-     * Fetches and displays file paths and directory structure in their panels.
-     * @returns {Promise<void>} No return value.
-     * Used by `btnLoadFiles` event listener.
-     */
-    async function LoadPaths() {
-        console.log('Entering DisplayPathsAndDirectory');
-        DOM.btnLoadFiles.disabled = true;
-        try {
-            const cachedPaths = cacheMan.getCachePaths();
-            DisplayPopUp(cachedPaths && !Array.isArray(cachedPaths) ? 'Loading paths from cache' : 'Loading paths from GitHub');
-            let result = cachedPaths && !Array.isArray(cachedPaths) ? cachedPaths : await api.fetchFilePaths();
-            let paths = Array.isArray(result) ? result : result.paths;
-            if (!cachedPaths || Array.isArray(cachedPaths)) {
-                cacheMan.setCachePaths(result);
-            }
-        } catch (error) {
-            const errorMessage = `Error in Function DisplayPathsAndDirectory: ${error.message}`;
-            console.error(errorMessage);
-            DOM.divError.textContent = errorMessage;
-        } 
-        DOM.btnLoadFiles.disabled = false;
-        console.log('Exiting DisplayPathsAndDirectory');
     }
 
     /**
@@ -270,6 +327,7 @@ export function getAppFunctions(settings, state, dom) {
         let jsonContent;
         try {
             const parsed = JSON.parse(json);
+            
             if (typeof parsed === 'object' && parsed !== null) {
                 jsonContent = JSON.stringify(parsed, null, 2);
             } else {
@@ -291,17 +349,9 @@ export function getAppFunctions(settings, state, dom) {
      * Used by `fileListCopy`, `directoryCopy`, `codeCopy` event listeners.
      */
     async function copyPathsToClipboard(elementId) {
-        console.log(`Copying paths to clipboard: ${elementId}`);
-        const outputElement = document.getElementById(elementId);
         try {
-            await navigator.clipboard.writeText(outputElement.textContent);
-            const message = elementId === 'code-output' ? 'Code copied to clipboard!' : 'Paths copied to clipboard!';
-            DOM.divError.className = 'success';
-            DOM.divError.textContent = message;
-            setTimeout(() => {
-                DOM.divError.textContent = '';
-                DOM.divError.className = '';
-            }, 3000);
+            await navigator.clipboard.writeText(elementId.textContent);
+            DisplayPopUp(elementId.id +' copied to clipboard!');
         } catch (error) {
             console.error(`Error copying to clipboard: ${error.message}`);
             DOM.divError.className = 'error';
@@ -333,12 +383,7 @@ export function getAppFunctions(settings, state, dom) {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        DOM.divError.className = 'success';
-        DOM.divError.textContent = 'Paths saved as JSON!';
-        setTimeout(() => {
-            DOM.divError.textContent = '';
-            DOM.divError.className = '';
-        }, 3000);
+        DisplayPopUp( 'Paths saved as JSON!');
     }
 
     /**
@@ -346,30 +391,39 @@ export function getAppFunctions(settings, state, dom) {
      * @returns {void} No return value.
      * Used by `selProfile` event listener.
      */
-    function handleProfileChange(event) {
+    async function handleProfileChange(event) {
         const newIndex = parseInt(event.target.value);
         if (newIndex === appState.activeProfileIndex) return;
         const newProfile = appSettings.profiles[newIndex];
         if (confirm(`Switch to profile ${newProfile.OWNER}/${newProfile.REPO}/${newProfile.BRANCH}?`)) {
             appState.activeProfileIndex = newIndex;
             appState.activeProfile = newProfile;
-            appState.fileContents = [];
+            DOM.selProfile.value = newIndex.toString();
         }
     }
 
     /**
      * Displays a temporary popup message in the popup-message div for 3 seconds.
-     * @param {string} _message - The message to display.
+     * @param {string} message - The message to display.
      * @returns {void} No return value.
-     * Used by `dataResult` event listener in `appController.js`.
+     * Used by `dataResult` event listener and other functions.
      */
-    function DisplayPopUp(_message) {
-        console.log('Displaying popup message:', _message);
-        DOM.divPopupMessage.textContent = _message;
+    function DisplayPopUp(message) {
+        // Clear existing timeout if active
+        if (appState.popupTimeoutId) {
+            clearTimeout(appState.popupTimeoutId);
+            appState.popupTimeoutId = null;
+        }
+
+        // Update message and show popup
+        DOM.divPopupMessage.textContent = message;
         DOM.divPopupMessage.style.display = 'block';
-        setTimeout(() => {
+
+        // Set new timeout to hide popup
+        appState.popupTimeoutId = setTimeout(() => {
             DOM.divPopupMessage.textContent = '';
             DOM.divPopupMessage.style.display = 'none';
+            appState.popupTimeoutId = null;
         }, 3000);
     }
 }
