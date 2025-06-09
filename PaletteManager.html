@@ -149,11 +149,10 @@
 
     .palette-input-group label {
       font-size: 0.9rem;
-      font-weight: bold;
     }
 
     .palette-input-group input {
-      width: 80px;
+      width: 60px;
       padding: 0.25rem .5rem;
       border: 1px solid #aaa;
       border-radius: 4px;
@@ -165,7 +164,6 @@
       flex-wrap: wrap;
       gap: 1rem;
       justify-content: center;
-      margin-top: 0.5rem;
     }
 
     .saturation-input-group {
@@ -198,7 +196,7 @@
       border-radius: 4px;
       background: #eee;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 1rem;
     }
 
     .visibility-dropdown {
@@ -293,32 +291,38 @@
 
     .palette-swatches {
       display: grid;
-      gap: 1rem;
     }
 
     .primary-container {
-      border: 2px solid #333;
+      background: #ddd;
       border-radius: 8px;
-      padding: 0.5rem 0;
     }
 
     .palette-swatch-group {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      padding: 10px;
+      position: relative;
     }
 
     .palette-swatch-group label {
       font-size: 0.9rem;
       font-weight: bold;
       width: 120px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .palette-swatch-group .swatch-info label {
+      width: auto;
     }
 
     .palette-swatch-line {
       display: flex;
       flex-wrap: nowrap;
-      align-items: flex-start;
-      gap: 0.5rem;
+      align-items: center;
     }
 
     .palette-swatch-column {
@@ -345,15 +349,23 @@
       gap: 0.2rem;
     }
 
+    .swatch-lightness {
+      font-size: 0.7rem;
+      color: #333;
+      text-align: center;
+      order: -1; /* Place above swatch */
+    }
+
     .palette-swatch {
-      width: 40px;
-      height: 40px;
+      min-width: 60px;
+      height: 50px;
       border: 1px solid #f5f5f5;
       position: relative;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0 5px;
     }
 
     .palette-swatch.primary {
@@ -361,16 +373,9 @@
     }
 
     .palette-swatch .hex-code {
-      font-size: 0.6rem;
-      text-shadow: 0 0 2px #000;
+      font-size: 0.7rem;
       text-align: center;
       pointer-events: none;
-    }
-
-    .swatch-lightness {
-      font-size: 0.7rem;
-      color: #333;
-      text-align: center;
     }
 
     .swatch-info {
@@ -420,6 +425,66 @@
     .palette-swatch:hover .palette-swatch-tooltip {
       display: block;
     }
+
+    .palette-header {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #aaa;
+    }
+
+    .rainbow-button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 30px; /* Fixed width to avoid stretching */
+      height: 30px;
+      background: #eee;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .rainbow-button:hover {
+      background: #ddd;
+    }
+
+    .saturation-dropdown {
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 10px;
+      background: #f9f9f9;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      z-index: 10;
+    }
+
+    .saturation-dropdown.active {
+      display: flex;
+    }
+
+    .saturation-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+    }
+
+    .saturation-row:hover {
+      background-color: #eee;
+    }
+
+    .saturation-row label {
+      font-size: 0.9rem;
+      width: 50px;
+    }
   </style>
 </head>
 <body>
@@ -446,7 +511,36 @@
   </div>
 
   <script type="module">
-    import { ModelManager, UNICODE, colorRelationships, relationshipOrder } from './ModelManager_forPalette.js';
+    //import { ModelManager, UNICODE, colorRelationships, relationshipOrder } from './ModelManager_forPalette.js';
+    import { ModelManager, UNICODE, colorRelationships, relationshipOrder } from 'https://cdn.jsdelivr.net/gh/lecespedes/GitHubUtility@main/ModelManager_forPalette.js';
+
+    function getAngleFromValue(_value, _range) {
+      const value = parseFloat(_value);
+      if (value === 1) return parseFloat(2 * Math.PI); // Handle 100%
+      if (value === 0) return 0; // Handle 0%
+      const sinValue = parseFloat(2 * value - 1);
+      if (Math.abs(sinValue) > 1) return 0;
+      const angle = parseFloat((_range / Math.PI) * Math.asin(sinValue) + Math.PI / 2);
+      return angle;
+    }
+
+    function getValueFromAngle(_theta, _range) {
+      const theta = parseFloat(_theta);
+      const value = parseFloat((Math.sin((theta / (_range / Math.PI)) - (Math.PI / 2)) + 1) / 2);
+      return value;
+    }
+
+    function toDegrees(radians) {
+      return parseFloat((radians * (180 / Math.PI)) % 360);
+    }
+
+    function toRadians(degrees) {
+      return parseFloat((degrees % 360) * (Math.PI / 180));
+    }
+
+    function normRadians(radians) {
+      return parseFloat(((radians % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI));
+    }
 
     class PaletteManager {
       constructor(containerElement) {
@@ -454,13 +548,18 @@
         this.modelManager = null;
         this.dom = {
           paletteControls: null,
-          lightnessSpreadInput: null,
           layoutToggle: null,
           saturationControls: null,
           visibilityControls: null,
           visibilityButton: null,
           visibilityDropdown: null,
-          paletteSwatches: null
+          paletteSwatches: null,
+          startAngleInput: null,
+          endAngleInput: null,
+          angleStepInput: null,
+          satStartAngleInput: null,
+          satEndAngleInput: null,
+          satAngleStepInput: null
         };
         this.initializeElements();
       }
@@ -470,38 +569,176 @@
       }
 
       initializeElements() {
+        this.containerElement.style.display = 'flex';
+        this.containerElement.style.justifyContent = 'center';
+        const paletteColumn = document.createElement('div');
+        paletteColumn.style.display = 'flex';
+        paletteColumn.style.flexDirection = 'column';
+        paletteColumn.style.alignItems = 'center';
+        paletteColumn.style.gap = '10px';
+
         // Create palette-controls
         const paletteControls = document.createElement('div');
         paletteControls.className = 'palette-controls';
         this.dom.paletteControls = paletteControls;
 
-        // Lightness Spread
-        const lightnessGroup = document.createElement('div');
-        lightnessGroup.className = 'palette-input-group';
-        const lightnessLabel = document.createElement('label');
-        lightnessLabel.htmlFor = 'lightness-spread';
-        lightnessLabel.textContent = 'Lightness Spread (%)';
-        const lightnessInput = document.createElement('input');
-        lightnessInput.type = 'number';
-        lightnessInput.id = 'lightness-spread';
-        lightnessInput.min = '5';
-        lightnessInput.max = '50';
-        lightnessInput.value = '20';
-        const lightnessRange = document.createTextNode('(5–50%)');
-        lightnessGroup.appendChild(lightnessLabel);
-        lightnessGroup.appendChild(lightnessInput);
-        lightnessGroup.appendChild(lightnessRange);
-        paletteControls.appendChild(lightnessGroup);
-        this.dom.lightnessSpreadInput = lightnessInput;
+        // Angular Lightness Controls
+        const angularLightnessGroup = document.createElement('div');
+        angularLightnessGroup.className = 'palette-input-group';
+        angularLightnessGroup.style.display = 'flex';
+        angularLightnessGroup.style.flexDirection = 'column';
+        angularLightnessGroup.style.gap = '5px';
+
+        const angularLightnessTitle = document.createElement('span');
+        angularLightnessTitle.textContent = 'Angular Lightness Controls';
+        angularLightnessGroup.appendChild(angularLightnessTitle);
+
+        // Lightness Start Angle
+        const startAngleGroup = document.createElement('div');
+        startAngleGroup.className = 'palette-input-group';
+        const startAngleLabel = document.createElement('label');
+        startAngleLabel.htmlFor = 'start-angle';
+        startAngleLabel.textContent = 'Start Angle';
+        const startAngleInput = document.createElement('input');
+        startAngleInput.type = 'number';
+        startAngleInput.id = 'start-angle';
+        startAngleInput.min = '0';
+        startAngleInput.max = '360';
+        startAngleInput.value = '75';
+        const startAngleRange = document.createElement('span');
+        startAngleRange.textContent = '(0-360°)';
+        startAngleGroup.appendChild(startAngleLabel);
+        startAngleGroup.appendChild(startAngleInput);
+        startAngleGroup.appendChild(startAngleRange);
+        angularLightnessGroup.appendChild(startAngleGroup);
+        this.dom.startAngleInput = startAngleInput;
+
+        // Lightness End Angle
+        const endAngleGroup = document.createElement('div');
+        endAngleGroup.className = 'palette-input-group';
+        const endAngleLabel = document.createElement('label');
+        endAngleLabel.htmlFor = 'end-angle';
+        endAngleLabel.textContent = 'End Angle';
+        const endAngleInput = document.createElement('input');
+        endAngleInput.type = 'number';
+        endAngleInput.id = 'end-angle';
+        endAngleInput.min = '0';
+        endAngleInput.max = '360';
+        endAngleInput.value = '300';
+        const endAngleRange = document.createElement('span');
+        endAngleRange.textContent = '(0-360°)';
+        endAngleGroup.appendChild(endAngleLabel);
+        endAngleGroup.appendChild(endAngleInput);
+        endAngleGroup.appendChild(endAngleRange);
+        angularLightnessGroup.appendChild(endAngleGroup);
+        this.dom.endAngleInput = endAngleInput;
+
+        // Lightness Angle Step
+        const angleStepGroup = document.createElement('div');
+        angleStepGroup.className = 'palette-input-group';
+        const angleStepLabel = document.createElement('label');
+        angleStepLabel.htmlFor = 'angle-step';
+        angleStepLabel.textContent = 'Angle Step';
+        const angleStepInput = document.createElement('input');
+        angleStepInput.type = 'number';
+        angleStepInput.id = 'angle-step';
+        angleStepInput.min = '5';
+        angleStepInput.max = '90';
+        angleStepInput.value = '45';
+        const angleStepRange = document.createElement('span');
+        angleStepRange.textContent = '(5-90°)';
+        angleStepGroup.appendChild(angleStepLabel);
+        angleStepGroup.appendChild(angleStepInput);
+        angleStepGroup.appendChild(angleStepRange);
+        angularLightnessGroup.appendChild(angleStepGroup);
+        this.dom.angleStepInput = angleStepInput;
+
+        paletteControls.appendChild(angularLightnessGroup);
+
+        // Angular Saturation Controls
+        const angularSaturationGroup = document.createElement('div');
+        angularSaturationGroup.className = 'palette-input-group';
+        angularSaturationGroup.style.display = 'flex';
+        angularSaturationGroup.style.flexDirection = 'column';
+        angularSaturationGroup.style.gap = '5px';
+
+        const angularSaturationTitle = document.createElement('span');
+        angularSaturationTitle.textContent = 'Angular Saturation Controls';
+        angularSaturationGroup.appendChild(angularSaturationTitle);
+
+        // Saturation Start Angle
+        const satStartAngleGroup = document.createElement('div');
+        satStartAngleGroup.className = 'palette-input-group';
+        const satStartAngleLabel = document.createElement('label');
+        satStartAngleLabel.htmlFor = 'sat-start-angle';
+        satStartAngleLabel.textContent = 'Start Angle';
+        const satStartAngleInput = document.createElement('input');
+        satStartAngleInput.type = 'number';
+        satStartAngleInput.id = 'sat-start-angle';
+        satStartAngleInput.min = '0';
+        satStartAngleInput.max = '360';
+        satStartAngleInput.value = '90';
+        const satStartAngleRange = document.createElement('span');
+        satStartAngleRange.textContent = '(0-360°)';
+        satStartAngleGroup.appendChild(satStartAngleLabel);
+        satStartAngleGroup.appendChild(satStartAngleInput);
+        satStartAngleGroup.appendChild(satStartAngleRange);
+        angularSaturationGroup.appendChild(satStartAngleGroup);
+        this.dom.satStartAngleInput = satStartAngleInput;
+
+        // Saturation End Angle
+        const satEndAngleGroup = document.createElement('div');
+        satEndAngleGroup.className = 'palette-input-group';
+        const satEndAngleLabel = document.createElement('label');
+        satEndAngleLabel.htmlFor = 'sat-end-angle';
+        satEndAngleLabel.textContent = 'End Angle';
+        const satEndAngleInput = document.createElement('input');
+        satEndAngleInput.type = 'number';
+        satEndAngleInput.id = 'sat-end-angle';
+        satEndAngleInput.min = '0';
+        satEndAngleInput.max = '360';
+        satEndAngleInput.value = '270';
+        const satEndAngleRange = document.createElement('span');
+        satEndAngleRange.textContent = '(0-360°)';
+        satEndAngleGroup.appendChild(satEndAngleLabel);
+        satEndAngleGroup.appendChild(satEndAngleInput);
+        satEndAngleGroup.appendChild(satEndAngleRange);
+        angularSaturationGroup.appendChild(satEndAngleGroup);
+        this.dom.satEndAngleInput = satEndAngleInput;
+
+        // Saturation Angle Step
+        const satAngleStepGroup = document.createElement('div');
+        satAngleStepGroup.className = 'palette-input-group';
+        const satAngleStepLabel = document.createElement('label');
+        satAngleStepLabel.htmlFor = 'sat-angle-step';
+        satAngleStepLabel.textContent = 'Angle Step';
+        const satAngleStepInput = document.createElement('input');
+        satAngleStepInput.type = 'number';
+        satAngleStepInput.id = 'sat-angle-step';
+        satAngleStepInput.min = '5';
+        satAngleStepInput.max = '90';
+        satAngleStepInput.value = '30';
+        const satAngleStepRange = document.createElement('span');
+        satAngleStepRange.textContent = '(5-90°)';
+        satAngleStepGroup.appendChild(satAngleStepLabel);
+        satAngleStepGroup.appendChild(satAngleStepInput);
+        satAngleStepGroup.appendChild(satAngleStepRange);
+        angularSaturationGroup.appendChild(satAngleStepGroup);
+        this.dom.satAngleStepInput = satAngleStepInput;
+
+        paletteControls.appendChild(angularSaturationGroup);
 
         // Layout Toggle
         const switchContainer = document.createElement('div');
         switchContainer.className = 'palette-switch-container';
+        switchContainer.style.display = 'flex';
+        switchContainer.style.alignItems = 'center';
         const rowsLabel = document.createElement('span');
         rowsLabel.className = 'switch-label';
-        rowsLabel.textContent = 'Rows';
+        rowsLabel.textContent = 'Rows ';
         const switchLabel = document.createElement('label');
         switchLabel.className = 'switch';
+        switchLabel.style.margin = '0 5px';
         const switchInput = document.createElement('input');
         switchInput.type = 'checkbox';
         switchInput.id = 'layout-toggle';
@@ -511,7 +748,7 @@
         switchLabel.appendChild(slider);
         const columnsLabel = document.createElement('span');
         columnsLabel.className = 'switch-label';
-        columnsLabel.textContent = 'Columns';
+        columnsLabel.textContent = ' Columns';
         switchContainer.appendChild(rowsLabel);
         switchContainer.appendChild(switchLabel);
         switchContainer.appendChild(columnsLabel);
@@ -534,24 +771,76 @@
         this.dom.visibilityDropdown = visibilityDropdown;
 
         // Saturation Controls
+        const groupSatCtrls = document.createElement('div');
+        groupSatCtrls.style.display = 'flex';
+        groupSatCtrls.style.flexDirection = 'column';
+        groupSatCtrls.style.gap = '10px';
+        const groupSatCtrls_Title = document.createElement('span');
+        groupSatCtrls_Title.textContent = 'Color Relationship Group Saturation (0-100%)';
+        groupSatCtrls.appendChild(groupSatCtrls_Title);
+
         const saturationControls = document.createElement('div');
         saturationControls.className = 'saturation-controls';
         this.dom.saturationControls = saturationControls;
+        groupSatCtrls.appendChild(saturationControls);
 
         // Palette Swatches
         const paletteSwatches = document.createElement('div');
         paletteSwatches.className = 'palette-swatches';
         this.dom.paletteSwatches = paletteSwatches;
 
-        // Append all to container
-        this.containerElement.appendChild(paletteControls);
-        this.containerElement.appendChild(saturationControls);
-        this.containerElement.appendChild(paletteSwatches);
+        const paletteHeader = document.createElement('div');
+        paletteHeader.className = 'palette-header';
+        paletteHeader.style.display = 'flex';
+        paletteHeader.style.flexDirection = 'column';
+        paletteHeader.style.gap = '10px';
+        paletteHeader.appendChild(paletteControls);
+        paletteHeader.appendChild(groupSatCtrls);
+
+        paletteColumn.appendChild(paletteHeader);
+        paletteColumn.appendChild(paletteSwatches);
+
+        this.containerElement.appendChild(paletteColumn);
 
         // Event Listeners
-        lightnessInput.addEventListener('input', () => {
+        startAngleInput.addEventListener('input', () => {
           if (this.modelManager) {
-            this.modelManager.state.lightnessSpread = ModelManager.parseInput(lightnessInput.value, 50, 20);
+            this.modelManager.state.startAngle = ModelManager.parseInput(startAngleInput.value, 360, 75);
+            this.createPalette();
+          }
+        });
+
+        endAngleInput.addEventListener('input', () => {
+          if (this.modelManager) {
+            this.modelManager.state.endAngle = ModelManager.parseInput(endAngleInput.value, 360, 300);
+            this.createPalette();
+          }
+        });
+
+        angleStepInput.addEventListener('input', () => {
+          if (this.modelManager) {
+            this.modelManager.state.angleStep = ModelManager.parseInput(angleStepInput.value, 90, 45);
+            this.createPalette();
+          }
+        });
+
+        satStartAngleInput.addEventListener('input', () => {
+          if (this.modelManager) {
+            this.modelManager.state.satStartAngle = ModelManager.parseInput(satStartAngleInput.value, 360, 90);
+            this.createPalette();
+          }
+        });
+
+        satEndAngleInput.addEventListener('input', () => {
+          if (this.modelManager) {
+            this.modelManager.state.satEndAngle = ModelManager.parseInput(satEndAngleInput.value, 360, 270);
+            this.createPalette();
+          }
+        });
+
+        satAngleStepInput.addEventListener('input', () => {
+          if (this.modelManager) {
+            this.modelManager.state.satAngleStep = ModelManager.parseInput(satAngleStepInput.value, 90, 30);
             this.createPalette();
           }
         });
@@ -583,7 +872,7 @@
 
           const label = document.createElement('label');
           const groupSymbol = relationshipOrder.find(rel => rel.group === group)?.symbol || '';
-          label.textContent = `${groupSymbol} S (%)`;
+          label.textContent = `${groupSymbol}`;
           groupEl.appendChild(label);
 
           const input = document.createElement('input');
@@ -602,10 +891,7 @@
             this.createPalette();
           });
 
-          const range = document.createTextNode('(0–100%)');
           groupEl.appendChild(input);
-          groupEl.appendChild(range);
-
           this.dom.saturationControls.appendChild(groupEl);
         });
       }
@@ -637,13 +923,32 @@
         });
       }
 
+      toggleDropdown(buttonEl) {
+        const dropdown = buttonEl.closest('.palette-swatch-group').querySelector('.saturation-dropdown');
+        const isActive = dropdown.classList.contains('active');
+        // Close all other dropdowns
+        document.querySelectorAll('.saturation-dropdown.active').forEach(el => {
+          el.classList.remove('active');
+        });
+        // Toggle the clicked dropdown
+        if (!isActive) {
+          dropdown.classList.add('active');
+        }
+      }
+
       createPalette() {
         if (!this.dom.paletteSwatches || !this.modelManager) return;
         this.dom.paletteSwatches.innerHTML = '';
 
         const { h, s, l } = this.modelManager.state.hsl;
-        const spread = this.modelManager.state.lightnessSpread;
         const isVertical = this.modelManager.state.isVerticalLayout;
+        const startAngle = this.modelManager.state.startAngle || 75;
+        const endAngle = this.modelManager.state.endAngle || 300;
+        const angleStep = this.modelManager.state.angleStep || 45;
+        const satStartAngle = this.modelManager.state.satStartAngle || 90;
+        const satEndAngle = this.modelManager.state.satEndAngle || 270;
+        const satAngleStep = this.modelManager.state.satAngleStep || 30;
+        const range = 2 * Math.PI; // Full circle for lightness and saturation
 
         const visibleRels = relationshipOrder.filter(rel => this.modelManager.state.visibleRelationships[rel.key]);
         this.dom.paletteSwatches.style.gridTemplateColumns = isVertical ? `repeat(${visibleRels.length}, minmax(150px, 1fr))` : 'auto';
@@ -651,35 +956,60 @@
         visibleRels.forEach(rel => {
           const group = document.createElement('div');
           group.className = 'palette-swatch-group';
+          group.style.flexDirection = isVertical ? 'column' : 'row';
 
-          const label = document.createElement('label');
-          label.textContent = `${rel.symbol} ${rel.name}`;
-          group.appendChild(label);
+          const labelContainer = document.createElement('label');
+          labelContainer.textContent = `${rel.symbol} ${rel.name}`;
+          group.appendChild(labelContainer);
+
+          // Rainbow Button
+          const rainbowButton = document.createElement('div');
+          rainbowButton.className = 'rainbow-button';
+          rainbowButton.textContent = '🌈';
+          group.appendChild(rainbowButton);
 
           const swatchContainer = document.createElement('div');
           swatchContainer.className = isVertical ? 'palette-swatch-column' : 'palette-swatch-line';
 
           const swatches = [];
           const relHue = (h + rel.offset) % 360;
-          let currentL = Math.round(l);
+
+          // Calculate lightness steps using angular divisions
           const lightnessSteps = [];
+          let currentAngle = startAngle;
+          const angles = [];
 
-          for (let stepL = currentL; stepL <= 100; stepL += spread) {
-            lightnessSteps.push(Math.min(stepL, 100));
+          while (currentAngle <= endAngle) {
+            angles.push(currentAngle);
+            currentAngle += angleStep;
           }
-          for (let stepL = currentL - spread; stepL >= 0; stepL -= spread) {
-            lightnessSteps.push(Math.max(stepL, 0));
+
+          // Map angles to lightness values (0-100%)
+          angles.forEach(angle => {
+            const theta = toRadians(angle);
+            const normalizedValue = getValueFromAngle(theta, range);
+            const lightness = Math.min(Math.max(normalizedValue * 100, 0), 100);
+            lightnessSteps.push(Math.round(lightness));
+          });
+
+          // Find the lightness closest to current l and replace it
+          if (lightnessSteps.length > 0) {
+            const currentL = Math.round(l);
+            const closestIndex = lightnessSteps.reduce((closestIdx, stepL, idx) => {
+              return Math.abs(stepL - currentL) < Math.abs(lightnessSteps[closestIdx] - currentL) ? idx : closestIdx;
+            }, 0);
+            lightnessSteps[closestIndex] = currentL;
           }
 
-          lightnessSteps.sort((a, b) => a - b);
+          // Remove duplicates and sort
+          const uniqueLightnessSteps = [...new Set(lightnessSteps)].sort((a, b) => a - b);
 
-          const saturation = this.modelManager.state.individualSaturationOverrides[rel.key] !== undefined
-            ? this.modelManager.state.individualSaturationOverrides[rel.key]
-            : rel.key === 'primary'
-              ? s
-              : this.modelManager.state.saturationOverrides[rel.group] || s;
+          const saturation = this.modelManager.state.individualSaturationOverrides[rel.key] !== undefined ?
+            this.modelManager.state.individualSaturationOverrides[rel.key] :
+            rel.key === 'primary' ? s : this.modelManager.state.saturationOverrides[rel.group] || s;
 
-          lightnessSteps.forEach(stepL => {
+          // Main swatches
+          uniqueLightnessSteps.forEach(stepL => {
             const rgb = ModelManager.hslToRGB(relHue, saturation, stepL);
             const hex = ModelManager.rgbToHex(rgb.r, rgb.g, rgb.b);
             swatches.push({
@@ -705,7 +1035,7 @@
             hexCode.className = 'hex-code';
             hexCode.textContent = swatch.hex.toUpperCase();
             const swatchLightness = swatch.l;
-            const textLightness = swatchLightness > 70 ? 0 : 100;
+            const textLightness = swatchLightness > 60 ? 0 : 100;
             const textRGB = ModelManager.hslToRGB(0, 0, textLightness);
             hexCode.style.color = ModelManager.rgbToHex(textRGB.r, textRGB.g, textRGB.b);
             swatchEl.appendChild(hexCode);
@@ -718,8 +1048,8 @@
             const lightness = document.createElement('div');
             lightness.className = 'swatch-lightness';
             lightness.textContent = `${Math.round(swatch.l)}%`;
-            swatchWrapper.appendChild(swatchEl);
             swatchWrapper.appendChild(lightness);
+            swatchWrapper.appendChild(swatchEl);
 
             swatchContainer.appendChild(swatchWrapper);
           });
@@ -746,6 +1076,90 @@
           swatchContainer.appendChild(infoEl);
 
           group.appendChild(swatchContainer);
+
+          // Saturation Dropdown
+          const saturationDropdown = document.createElement('div');
+          saturationDropdown.className = 'saturation-dropdown';
+
+          // Calculate saturation levels using angular divisions
+          const saturationLevels = [];
+          let currentSatAngle = satStartAngle;
+          const satAngles = [];
+
+          while (currentSatAngle <= satEndAngle) {
+            satAngles.push(currentSatAngle);
+            currentSatAngle += satAngleStep;
+          }
+
+          // Map angles to saturation values (0-100%)
+          satAngles.forEach(angle => {
+            const theta = toRadians(angle);
+            const normalizedValue = getValueFromAngle(theta, range);
+            const saturation = Math.min(Math.max(normalizedValue * 100, 0), 100);
+            saturationLevels.push(Math.round(saturation));
+          });
+
+          // Remove duplicates
+          const uniqueSaturationLevels = [...new Set(saturationLevels)];
+
+          uniqueSaturationLevels.forEach(satLevel => {
+            const satRow = document.createElement('div');
+            satRow.className = 'saturation-row';
+            satRow.dataset.saturation = satLevel;
+            satRow.dataset.key = rel.key;
+
+            const satLabel = document.createElement('label');
+            satLabel.textContent = `${satLevel}%`;
+            satRow.appendChild(satLabel);
+
+            const satSwatchContainer = document.createElement('div');
+            satSwatchContainer.className = isVertical ? 'palette-swatch-column' : 'palette-swatch-line';
+
+            uniqueLightnessSteps.forEach(stepL => {
+              const rgb = ModelManager.hslToRGB(relHue, satLevel, stepL);
+              const hex = ModelManager.rgbToHex(rgb.r, rgb.g, rgb.b);
+              const swatchWrapper = document.createElement('div');
+              swatchWrapper.className = 'swatch-wrapper';
+
+              const swatchEl = document.createElement('div');
+              swatchEl.className = 'palette-swatch';
+              swatchEl.style.backgroundColor = hex;
+
+              const hexCode = document.createElement('span');
+              hexCode.className = 'hex-code';
+              hexCode.textContent = hex.toUpperCase();
+              const textLightness = stepL > 60 ? 0 : 100;
+              const textRGB = ModelManager.hslToRGB(0, 0, textLightness);
+              hexCode.style.color = ModelManager.rgbToHex(textRGB.r, textRGB.g, textRGB.b);
+              swatchEl.appendChild(hexCode);
+
+              const tooltip = document.createElement('div');
+              tooltip.className = 'palette-swatch-tooltip';
+              tooltip.textContent = `${rel.name}\n${hex.toUpperCase()}\nhsl(${Math.round(relHue)}, ${satLevel}%, ${Math.round(stepL)}%)`;
+              swatchEl.appendChild(tooltip);
+
+              //const lightness = document.createElement('div');
+              //lightness.className = 'swatch-lightness';
+              //lightness.textContent = `${Math.round(stepL)}%`;
+              //swatchWrapper.appendChild(lightness);
+              swatchWrapper.appendChild(swatchEl);
+
+              satSwatchContainer.appendChild(swatchWrapper);
+            });
+
+            satRow.appendChild(satSwatchContainer);
+            saturationDropdown.appendChild(satRow);
+
+            satRow.addEventListener('click', () => {
+              this.modelManager.state.individualSaturationOverrides[rel.key] = satLevel;
+              this.createPalette();
+            });
+          });
+
+          group.appendChild(saturationDropdown);
+
+          // Rainbow button event
+          rainbowButton.addEventListener('click', () => this.toggleDropdown(rainbowButton));
 
           if (rel.key === 'primary') {
             const groupWrapper = document.createElement('div');
@@ -778,6 +1192,14 @@
 
       const paletteManager = new PaletteManager(dom.paletteControlsContainer);
       const modelManager = new ModelManager(paletteManager);
+
+      // Extend state with angular controls
+      modelManager.state.startAngle = 75;
+      modelManager.state.endAngle = 300;
+      modelManager.state.angleStep = 45;
+      modelManager.state.satStartAngle = 90;
+      modelManager.state.satEndAngle = 270;
+      modelManager.state.satAngleStep = 30;
 
       modelManager.inputControls('rgb', dom.rgbInputs);
       modelManager.inputControls('hsl', dom.hslInputs);

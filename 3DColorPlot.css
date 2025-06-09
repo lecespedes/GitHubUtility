@@ -219,6 +219,9 @@
       align-items: center;
       margin-left: 5px;
     }
+    .symbols{
+      font-family: 'Segoe UI Symbol', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
     @media (max-width: 800px) {
       .canvas-container {

@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="device-width, initial-scale=1.0">
+  <title>2D and 3D Color Visualization</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    .canvas-container {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+    canvas {
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      background: #fff;
+    }
+    #tooltip {
+      position: absolute;
+      background: #fff;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 0.9rem;
+      pointer-events: none;
+      display: none;
+      z-index: 2;
+      white-space: pre-line;
+    }
+    .controls {
+      margin: 10px 0;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background: #eee;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    #status {
+      margin: 10px 0;
+      font-size: 1rem;
+      color: #333;
+    }
+    #hue-select, #r-density, #theta-density {
+      padding: 0.5rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    label {
+      font-size: 0.9rem;
+      color: #333;
+    }
+    h2 {
+      font-size: 1.2rem;
+      color: #333;
+      margin: 10px 0 5px;
+      text-align: center;
+    }
+    #hue-slider, #lightness-slider {
+      width: 200px;
+      margin: 0 10px;
+    }
+    .noUi-target {
+      border: none;
+      background: #ddd;
+      height: 8px;
+      border-radius: 4px;
+    }
+    .noUi-connect {
+      background: #4a90e2;
+    }
+    .noUi-handle {
+      border: 1px solid #aaa;
+      border-radius: 50%;
+      background: #fff;
+      width: 16px;
+      height: 16px;
+      top: -4px;
+      cursor: pointer;
+    }
+    #hue-range-label, #lightness-range-label {
+      font-size: 0.9rem;
+      color: #333;
+    }
+    .slider-container, .relationship-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px;
+    }
+    .mode-toggle {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@v0.176.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.176.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css">
+</head>
+<body>
+  <h1>2D and 3D Color Visualization</h1>
+  <div class="controls">
+    <button id="load-sample">Load Sample Colors</button>
+    <select id="hue-select">
+      <option value="">Select Hue</option>
+    </select>
+    <label for="r-density">L Density:</label>
+    <input type="number" id="r-density" value="0.5" step="0.1" min="0.1" max="1" title="Factor to scale lightness points (0.1-1)">
+    <label for="theta-density">S Density:</label>
+    <input type="number" id="theta-density" value="1" step="0.1" min="0.1" max="1" title="Factor to scale saturation points (0.1-1)">
+    <div class="mode-toggle">
+      <label><input type="radio" name="mode" value="dome" checked> Dome</label>
+      <label><input type="radio" name="mode" value="donut"> Donut</label>
+      <label><input type="radio" name="mode" value="sphere"> Sphere</label>
+    </div>
+  </div>
+  <div class="canvas-container">
+    <div>
+      <h2 id="slCanvasTitle">θ = S * 90° vs. L (Lightness)</h2>
+      <canvas id="slCanvas" width="500" height="400"></canvas>
+      <div class="relationship-toggle">
+        <label title="Complementary"><input type="radio" name="relationship" value="complementary">◧</label>
+        <label title="2nd Split-Complementary"><input type="radio" name="relationship" value="splitComplementary-2">Ⓨ²</label>
+        <label title="2nd Triad"><input type="radio" name="relationship" value="triad-2">▲²</label>
+        <label title="2nd Tetrad"><input type="radio" name="relationship" value="tetrad-2">■²</label>
+        <label title="2nd Adjacent"><input type="radio" name="relationship" value="adjacent-2">∠²</label>
+        <label title="Primary"><input type="radio" name="relationship" value="primary" checked>★</label>
+        <label title="1st Adjacent"><input type="radio" name="relationship" value="adjacent-1">∠¹</label>
+        <label title="1st Tetrad"><input type="radio" name="relationship" value="tetrad-1">■¹</label>
+        <label title="1st Triad"><input type="radio" name="relationship" value="triad-1">▲¹</label>
+        <label title="1st Split-Complementary"><input type="radio" name="relationship" value="splitComplementary-1">Ⓨ¹</label>
+      </div>
+    </div>
+    <div>
+      <h2>HSL 3D Model (H as θ, S as φ, L as r)</h2>
+      <canvas id="threeCanvas" width="500" height="400"></canvas>
+      <div class="slider-container">
+        <label for="hue-slider">Hue Range:</label>
+        <div id="hue-slider"></div>
+        <span id="hue-range-label">0°–359°</span>
+      </div>
+      <div class="slider-container">
+        <label for="lightness-slider">Lightness Range:</label>
+        <div id="lightness-slider"></div>
+        <span id="lightness-range-label">0%–100%</span>
+      </div>
+    </div>
+    <div>
+      <h2>Surface Model (S as θ, L as φ)</h2>
+      <canvas id="newCanvas" width="500" height="400"></canvas>
+    </div>
+  </div>
+  <div id="status">Click "Load Sample Colors" to populate the plots</div>
+  <div id="tooltip"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // Original 3D Model Setup (threeCanvas)
+    const threeCanvas = document.getElementById('threeCanvas');
+    const scene = new THREE.Scene();
+    const DOME_RADIUS = 300;
+    const BASE_SPHERE_SIZE = 3;
+    const BASE_POINT_RADIUS = 2.5;
+    const camera = new THREE.PerspectiveCamera(45, threeCanvas.width / threeCanvas.height, 0.1, DOME_RADIUS*5);
+    const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true });
+    renderer.setSize(threeCanvas.width, threeCanvas.height);
+    camera.aspect = threeCanvas.width / threeCanvas.height;
+    camera.updateProjectionMatrix();
+    camera.position.set(DOME_RADIUS, DOME_RADIUS*3, DOME_RADIUS*1.5);
+    camera.lookAt(0, DOME_RADIUS/2, 0);
+
+    const controls = new OrbitControls(camera, threeCanvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = true;
+    controls.minDistance = 50;
+    controls.maxDistance = 1000;
+    controls.target.set(0, DOME_RADIUS / 2, 0);
+    controls.update();
+
+    // New 3D Surface Model Setup (newCanvas)
+    const newCanvas = document.getElementById('newCanvas');
+    const newScene = new THREE.Scene();
+    const FIXED_RADIUS = 200;
+    const newCamera = new THREE.PerspectiveCamera(45, newCanvas.width / newCanvas.height, 0.1, FIXED_RADIUS*5);
+    const newRenderer = new THREE.WebGLRenderer({ canvas: newCanvas, alpha: true });
+    newRenderer.setSize(newCanvas.width, newCanvas.height);
+    newCamera.aspect = newCanvas.width / newCanvas.height;
+    newCamera.updateProjectionMatrix();
+    newCamera.position.set(FIXED_RADIUS, FIXED_RADIUS*3, FIXED_RADIUS*1.5);
+    newCamera.lookAt(0, FIXED_RADIUS/2, 0);
+
+    const newControls = new OrbitControls(newCamera, newCanvas);
+    newControls.enableDamping = true;
+    newControls.dampingFactor = 0.05;
+    newControls.screenSpacePanning = true;
+    newControls.minDistance = 50;
+    newControls.maxDistance = 1000;
+    newControls.target.set(0, FIXED_RADIUS / 2, 0);
+    newControls.update();
+
+    let instancedMesh = null;
+    let newInstancedMesh = null;
+    let dashedEdges = null;
+    let newDashedEdges = null;
+    let hueLabelsGroup = null;
+    let newHueLabelsGroup = null;
+    let sAxis = null;
+    let lAxis = null;
+    let sLabel = null;
+    let lLabel = null;
+    let newSAxis = null;
+    let newLAxis = null;
+    let newSLabel = null;
+    let newLLabel = null;
+    let currentMode = 'dome';
+    let currentRelationship = 'primary';
+    let rDensity = 0.5;
+    let thetaDensity = 1.0;
+
+    const UNICODE = {
+      star: "\u2605",
+      reflect: "\u25E7",
+      circled_y: "\u24CE",
+      triangle: "\u25B2",
+      filled_square: "\u25A0",
+      angle: "\u2220"
+    };
+
+    const relationshipOrder = [
+      { key: 'complementary', index: 0, offset: 180, name: 'Complementary', symbol: UNICODE.reflect, group: 'complementary' },
+      { key: 'splitComplementary-2', index: 1, offset: 210, name: '2nd Split-Complementary', symbol: UNICODE.circled_y, group: 'splitComplementary' },
+      { key: 'triad-2', index: 1, offset: 240, name: '2nd Triad', symbol: UNICODE.triangle, group: 'triad' },
+      { key: 'tetrad-2', index: 1, offset: 270, name: '2nd Tetrad', symbol: UNICODE.filled_square, group: 'tetrad' },
+      { key: 'adjacent-2', index: 1, offset: -30, name: '2nd Adjacent', symbol: UNICODE.angle, group: 'adjacent' },
+      { key: 'primary', index: 0, offset: 0, name: 'Primary', symbol: UNICODE.star, group: 'primary' },
+      { key: 'adjacent-1', index: 0, offset: 30, name: '1st Adjacent', symbol: UNICODE.angle, group: 'adjacent' },
+      { key: 'tetrad-1', index: 0, offset: 90, name: '1st Tetrad', symbol: UNICODE.filled_square, group: 'tetrad' },
+      { key: 'triad-1', index: 0, offset: 120, name: '1st Triad', symbol: UNICODE.triangle, group: 'triad' },
+      { key: 'splitComplementary-1', index: 0, offset: 150, name: '1st Split-Complementary', symbol: UNICODE.circled_y, group: 'splitComplementary' }
+    ];
+
+    function createLabel(text, position, color, fontFamily = 'Helvetica, Arial, sans-serif', fontWeight = 400, fontSize = 96) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const context = canvas.getContext('2d');
+      context.fillStyle = color;
+      context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      context.textAlign = 'left';
+      context.textBaseline = 'middle';
+      context.fillText(text, 10, 128);
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.position.copy(position);
+      sprite.scale.set(40, 40, 1);
+      return sprite;
+    }
+
+    function createAxis(_type, _label, _axisLength, _color) {
+      const axisGeometry = new THREE.BufferGeometry();
+      const axisMaterial = new THREE.LineBasicMaterial({ color: _color });
+      let axisLabel = null;
+      switch (_type) {
+        case "x":
+          axisGeometry.setFromPoints([new THREE.Vector3(-_axisLength + 10, 0, 0), new THREE.Vector3(_axisLength + 10, 0, 0)]);
+          axisLabel = createLabel(_label, new THREE.Vector3(_axisLength + 30, 0, 0), _color);
+          break;
+        case "y":
+          axisGeometry.setFromPoints([new THREE.Vector3(0, -_axisLength, 0), new THREE.Vector3(0, _axisLength + 10, 0)]);
+          axisLabel = createLabel(_label, new THREE.Vector3(0, _axisLength + 30, 0), _color);
+          break;
+        case "z":
+          axisGeometry.setFromPoints([new THREE.Vector3(0, 0, -_axisLength + 10), new THREE.Vector3(0, 0, _axisLength + 10)]);
+          axisLabel = createLabel(_label, new THREE.Vector3(0, 0, _axisLength + 30), _color);
+          break;
+      }
+      const axis = new THREE.Line(axisGeometry, axisMaterial);
+      newScene.add(axis);
+      newScene.add(axisLabel);
+    }
+
+    function createSphereMarkers(_type, _radius, _range, _color = "#000000", _direction = 1, _rotation = 0, _counterClockwise = false) {
+      const markerDist = _radius + 15;
+      const sphereLabels = new THREE.Group();
+      let x = 0, y = 0, z = 0;
+      for (let degrees = 0; degrees <= _range; degrees += 15) {
+        const radians = (degrees * Math.PI) / 180;
+        switch (_type) {
+          case "x":
+            x = markerDist * Math.cos(radians + _rotation);
+            z = _counterClockwise ? -markerDist * Math.sin(radians + _rotation) : markerDist * Math.sin(radians + _rotation);
+            break;
+          case "y":
+            x = _counterClockwise ? -markerDist * Math.sin(radians + _rotation) : markerDist * Math.sin(radians + _rotation);
+            y = markerDist * Math.cos(radians + _rotation);
+            break;
+          case "z":
+            y = _counterClockwise ? -markerDist * Math.sin(radians + _rotation) : markerDist * Math.sin(radians + _rotation);
+            z = markerDist * Math.cos(radians + _rotation);
+            break;
+        }
+        const labelPos = new THREE.Vector3(x, y, z);
+        const label = createLabel((_direction * degrees).toString(), labelPos, _color);
+        sphereLabels.add(label);
+      }
+      newScene.add(sphereLabels);
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    function hslToHex(h, s, l) {
+      h = h / 360;
+      s = s / 100;
+      l = l / 100;
+      let r, g, b;
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      const toHex = x => {
+        const hex = Math.round(x * 255).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      };
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    function setupThreeScene(colors, minHue, maxHue, minLightness, maxLightness) {
+      if (instancedMesh) {
+        scene.remove(instancedMesh);
+        instancedMesh.geometry.dispose();
+        instancedMesh.material.dispose();
+      }
+      if (dashedEdges) {
+        scene.remove(dashedEdges);
+        dashedEdges.geometry.dispose();
+        dashedEdges.material.dispose();
+      }
+      if (hueLabelsGroup) {
+        hueLabelsGroup.children.forEach(child => {
+          if (child.material) child.material.dispose();
+        });
+        scene.remove(hueLabelsGroup);
+      }
+      if (sAxis) {
+        scene.remove(sAxis);
+        sAxis.geometry.dispose();
+        sAxis.material.dispose();
+      }
+      if (lAxis) {
+        scene.remove(lAxis);
+        lAxis.geometry.dispose();
+        lAxis.material.dispose();
+      }
+      if (sLabel) {
+        scene.remove(sLabel);
+        sLabel.material.dispose();
+      }
+      if (lLabel) {
+        scene.remove(lLabel);
+        lLabel.material.dispose();
+      }
+
+      let geometry;
+      if (currentMode === 'dome') {
+        geometry = new THREE.SphereGeometry(DOME_RADIUS, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      } else if (currentMode === 'donut') {
+        geometry = new THREE.SphereGeometry(DOME_RADIUS, 24, 16, 0, Math.PI * 2, Math.PI / 4, Math.PI / 2);
+      } else if (currentMode === 'sphere') {
+        geometry = new THREE.SphereGeometry(DOME_RADIUS, 24, 16);
+      }
+      const edgesGeometry = new THREE.EdgesGeometry(geometry);
+      const dashedMaterial = new THREE.LineDashedMaterial({
+        color: 0xaaaaaa,
+        dashSize: 2,
+        gapSize: 1,
+        linewidth: 1
+      });
+      dashedEdges = new THREE.LineSegments(edgesGeometry, dashedMaterial);
+      dashedEdges.computeLineDistances();
+      scene.add(dashedEdges);
+
+      const axisLength = 320;
+      const lAxisGeometry = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, axisLength, 0)
+      ]);
+      const lAxisMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+      lAxis = new THREE.Line(lAxisGeometry, lAxisMaterial);
+      scene.add(lAxis);
+
+      lLabel = createLabel('L', new THREE.Vector3(10, axisLength + 20, 0), '#000000');
+      scene.add(lLabel);
+
+      hueLabelsGroup = new THREE.Group();
+      hueLabelsGroup.name = 'hueLabels';
+      for (let angle = 0; angle < 360; angle += 15) {
+        const theta = (angle * Math.PI) / 180;
+        const labelPos = new THREE.Vector3(
+          310 * Math.cos(theta),
+          0,
+          310 * Math.sin(theta)
+        );
+        const label = createLabel(angle.toString(), labelPos, '#000000');
+        hueLabelsGroup.add(label);
+      }
+      scene.add(hueLabelsGroup);
+
+      // Normalize hue range for circular filtering
+      const normalizedMinHue = ((minHue % 360) + 360) % 360;
+      const normalizedMaxHue = ((maxHue % 360) + 360) % 360;
+      const filteredColors = colors.filter(color => {
+        let { h, l, thetaDeg } = color;
+        h = ((h % 360) + 360) % 360;
+        let include = l >= minLightness && l <= maxLightness;
+        if (normalizedMinHue <= normalizedMaxHue) {
+          include = include && h >= normalizedMinHue && h <= normalizedMaxHue;
+        } else {
+          include = include && (h >= normalizedMinHue || h <= normalizedMaxHue);
+        }
+        if (currentMode === 'dome') {
+          include = include && thetaDeg <= 90; // φ: 0 to π/2
+        } else if (currentMode === 'donut') {
+          const phi = ((thetaDeg / 90) * (Math.PI / 2) + Math.PI / 4);
+          include = include && phi >= Math.PI / 4 && phi <= 3 * Math.PI / 4;
+        }
+        return include;
+      });
+
+      const sphereSize = currentMode === 'sphere' ? BASE_SPHERE_SIZE * 2 : BASE_SPHERE_SIZE;
+      const pointGeometry = new THREE.SphereGeometry(sphereSize, 6, 6);
+      pointGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(pointGeometry.attributes.position.count * 3).fill(1), 3));
+      const material = new THREE.MeshBasicMaterial({ vertexColors: true });
+      instancedMesh = new THREE.InstancedMesh(pointGeometry, material, filteredColors.length);
+
+      const colorsArray = new Float32Array(filteredColors.length * 3);
+      const dummy = new THREE.Object3D();
+
+      filteredColors.forEach((color, i) => {
+        let { h, s, l, hex, thetaDeg } = color;
+        s = isNaN(s) || s < 0 ? 0 : s;
+        l = isNaN(l) || l < 0 ? 0 : l;
+        let phi;
+        if (currentMode === 'dome') {
+          phi = (thetaDeg * Math.PI) / 180;
+        } else if (currentMode === 'donut') {
+          phi = ((thetaDeg / 90) * (Math.PI / 2) + Math.PI / 4);
+        } else if (currentMode === 'sphere') {
+          phi = (thetaDeg * Math.PI * 2) / 180;
+        }
+        const theta = (h * Math.PI) / 180;
+        const r = l * (DOME_RADIUS / 100);
+        const x = r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.cos(phi);
+        const z = r * Math.sin(phi) * Math.sin(theta);
+
+        dummy.position.set(x, y, z);
+        dummy.updateMatrix();
+        instancedMesh.setMatrixAt(i, dummy.matrix);
+
+        const rgb = new THREE.Color(hex);
+        colorsArray[i * 3] = rgb.r;
+        colorsArray[i * 3 + 1] = rgb.g;
+        colorsArray[i * 3 + 2] = rgb.b;
+      });
+
+      instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(colorsArray, 3);
+      instancedMesh.instanceMatrix.needsUpdate = true;
+      instancedMesh.instanceColor.needsUpdate = true;
+      scene.add(instancedMesh);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    function setupNewScene(colors, minHue, maxHue, minLightness, maxLightness, selectedHue) {
+      if (newInstancedMesh) {
+        newScene.remove(newInstancedMesh);
+        newInstancedMesh.geometry.dispose();
+        newInstancedMesh.material.dispose();
+      }
+      if (newDashedEdges) {
+        newScene.remove(newDashedEdges);
+        newDashedEdges.geometry.dispose();
+        newDashedEdges.material.dispose();
+      }
+      if (newHueLabelsGroup) {
+        newHueLabelsGroup.children.forEach(child => {
+          if (child.material) child.material.dispose();
+        });
+        newScene.remove(newHueLabelsGroup);
+      }
+      if (newSAxis) {
+        newScene.remove(newSAxis);
+        newSAxis.geometry.dispose();
+        newSAxis.material.dispose();
+      }
+      if (newLAxis) {
+        newScene.remove(newLAxis);
+        newLAxis.geometry.dispose();
+        newSAxis.material.dispose();
+      }
+      if (newSLabel) {
+        newScene.remove(newSLabel);
+        newSLabel.material.dispose();
+      }
+      if (newLLabel) {
+        newScene.remove(newLLabel);
+        newLLabel.material.dispose();
+      }
+
+      let geometry;
+      if (currentMode === 'dome' || currentMode === 'donut') {
+        geometry = new THREE.SphereGeometry(FIXED_RADIUS, 24, 16, -Math.PI / 2, Math.PI, 0, Math.PI);
+      } else if (currentMode === 'sphere') {
+        geometry = new THREE.SphereGeometry(FIXED_RADIUS, 24, 16, -Math.PI, 2 * Math.PI, 0, Math.PI);
+      }
+      const edgesGeometry = new THREE.EdgesGeometry(geometry);
+      const dashedMaterial = new THREE.LineDashedMaterial({
+        color: 0xaaaaaa,
+        dashSize: 2,
+        gapSize: 1,
+        linewidth: 1
+      });
+      newDashedEdges = new THREE.LineSegments(edgesGeometry, dashedMaterial);
+      newDashedEdges.computeLineDistances();
+      newScene.add(newDashedEdges);
+
+      createAxis("y", "S", FIXED_RADIUS, "#00ff00");
+      createAxis("z", "L", FIXED_RADIUS, "#0000ff");
+      const thetaRange = currentMode === 'sphere' ? 180 : 90;
+      createSphereMarkers("y", FIXED_RADIUS, thetaRange);
+      createSphereMarkers("x", FIXED_RADIUS, 180, "#000000", 1, -Math.PI/2, true);
+
+      // Dynamic point calculation
+      const points = [];
+      const relatedHues = [parseFloat(selectedHue)];
+      if (currentRelationship !== 'primary') {
+        const rel = relationshipOrder.find(r => r.key === currentRelationship);
+        relatedHues.push(((parseFloat(selectedHue) + rel.offset) % 360 + 360) % 360);
+      }
+
+      const pointSpacing = currentMode === 'sphere' ? 2 * (BASE_SPHERE_SIZE * 2) : 2 * BASE_SPHERE_SIZE;
+      const N_l_max = Math.floor(Math.PI / (pointSpacing / FIXED_RADIUS));
+      const N_l = Math.max(1, Math.floor(N_l_max * rDensity));
+      for (let i = 0; i <= N_l; i++) {
+        const l = (i / N_l) * 100;
+        if (l < minLightness || l > maxLightness) continue;
+        const phi = (l / 100) * Math.PI;
+        const thetaRange = currentMode === 'sphere' ? Math.PI : Math.PI / 2;
+        const arcLength = thetaRange * FIXED_RADIUS * Math.sin(phi);
+        const N_points = Math.floor(arcLength / pointSpacing);
+        let N_s = Math.max(1, Math.floor(N_points * thetaDensity));
+        if (arcLength === 0) N_s = 1;
+        const deltaS = 100 / N_s;
+
+        for (let j = 0; j <= N_s; j++) {
+          const s = j * deltaS;
+          for (const h of relatedHues) {
+            const maxTheta = currentMode === 'sphere' ? Math.PI : Math.PI / 2;
+            let theta = h === parseFloat(selectedHue) ? (s / 100) * maxTheta : -(s / 100) * maxTheta;
+            if (currentMode === 'donut') {
+              theta += h === parseFloat(selectedHue) ? Math.PI / 4 : -Math.PI / 4;
+            }
+            const hex = hslToHex(h, s, l);
+            const thetaDeg = h === parseFloat(selectedHue) ? (s / 100) * (currentMode === 'sphere' ? 180 : 90) : -(s / 100) * (currentMode === 'sphere' ? 180 : 90);
+            const tableTheta = (s === 0 && l === 0) ? 0 : Math.atan2(l, s) * (180 / Math.PI);
+            const sqrtSL = Math.sqrt(s * s + l * l);
+            points.push({
+              code: `H${h}S${s.toFixed(2)}L${l.toFixed(2)}`,
+              hex,
+              h,
+              s,
+              l,
+              theta: tableTheta,
+              sqrtSL,
+              thetaDeg,
+              phi,
+              plotTheta: theta
+            });
+          }
+        }
+      }
+
+      const sphereSize = currentMode === 'sphere' ? BASE_SPHERE_SIZE * 2 : BASE_SPHERE_SIZE;
+      const pointGeometry = new THREE.SphereGeometry(sphereSize, 6, 6);
+      pointGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(pointGeometry.attributes.position.count * 3).fill(1), 3));
+      const material = new THREE.MeshBasicMaterial({ vertexColors: true });
+      newInstancedMesh = new THREE.InstancedMesh(pointGeometry, material, points.length);
+
+      const colorsArray = new Float32Array(points.length * 3);
+      const dummy = new THREE.Object3D();
+
+      points.forEach((color, i) => {
+        const { s, l, hex, h, plotTheta, phi } = color;
+        const x = FIXED_RADIUS * Math.sin(phi) * Math.sin(plotTheta);
+        const y = FIXED_RADIUS * Math.sin(phi) * Math.cos(plotTheta);
+        const z = FIXED_RADIUS * Math.cos(phi);
+
+        dummy.position.set(x, y, z);
+        dummy.updateMatrix();
+        newInstancedMesh.setMatrixAt(i, dummy.matrix);
+
+        const rgb = new THREE.Color(hex);
+        colorsArray[i * 3] = rgb.r;
+        colorsArray[i * 3 + 1] = rgb.g;
+        colorsArray[i * 3 + 2] = rgb.b;
+      });
+
+      newInstancedMesh.instanceColor = new THREE.InstancedBufferAttribute(colorsArray, 3);
+      newInstancedMesh.instanceMatrix.needsUpdate = true;
+      newInstancedMesh.instanceColor.needsUpdate = true;
+      newScene.add(newInstancedMesh);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        newControls.update();
+        newRenderer.render(newScene, newCamera);
+      }
+      animate();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const slCanvas = document.getElementById('slCanvas');
+      const slCtx = slCanvas.getContext('2d');
+      const tooltip = document.getElementById('tooltip');
+      const loadSampleBtn = document.getElementById('load-sample');
+      const statusDiv = document.getElementById('status');
+      const hueSelect = document.getElementById('hue-select');
+      const rDensityInput = document.getElementById('r-density');
+      const thetaDensityInput = document.getElementById('theta-density');
+      const slCanvasTitle = document.getElementById('slCanvasTitle');
+      const hueSlider = document.getElementById('hue-slider');
+      const hueRangeLabel = document.getElementById('hue-range-label');
+      const lightnessSlider = document.getElementById('lightness-slider');
+      const lightnessRangeLabel = document.getElementById('lightness-range-label');
+      const centerX = slCanvas.width / 2;
+      const centerY = slCanvas.height / 2;
+      const maxRadius = 180;
+
+      let colors = [];
+      let minHue = 0;
+      let maxHue = 359;
+      let minLightness = 0;
+      let maxLightness = 100;
+      let selectedHue = 0;
+
+      noUiSlider.create(hueSlider, {
+        start: [0, 359],
+        connect: true,
+        range: { 'min': 0, 'max': 359 },
+        step: 1,
+        tooltips: [false, false],
+        format: {
+          to: value => Math.round(value) + '°',
+          from: value => parseInt(value)
+        }
+      });
+
+      noUiSlider.create(lightnessSlider, {
+        start: [0, 100],
+        connect: true,
+        range: { 'min': 0, 'max': 100 },
+        step: 1,
+        tooltips: [false, false],
+        format: {
+          to: value => Math.round(value) + '%',
+          from: value => parseInt(value)
+        }
+      });
+
+      const updateScene = debounce(() => {
+        setupThreeScene(colors, minHue, maxHue, minLightness, maxLightness);
+        drawSLPoints();
+        setupNewScene(colors, minHue, maxHue, minLightness, maxLightness, selectedHue);
+      }, 200);
+
+      hueSlider.noUiSlider.on('update', (values) => {
+        minHue = parseInt(values[0]);
+        maxHue = parseInt(values[1]);
+        hueRangeLabel.textContent = `${minHue}°–${maxHue}°`;
+        updateScene();
+      });
+
+      lightnessSlider.noUiSlider.on('update', (values) => {
+        minLightness = parseInt(values[0]);
+        maxLightness = parseInt(values[1]);
+        lightnessRangeLabel.textContent = `${minLightness}%–${maxLightness}%`;
+        updateScene();
+      });
+
+      document.querySelectorAll('input[name="mode"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          currentMode = radio.value;
+          render();
+        });
+      });
+
+      document.querySelectorAll('input[name="relationship"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          currentRelationship = radio.value;
+          render();
+        });
+      });
+
+      function drawSLAxes() {
+        slCtx.clearRect(0, 0, slCanvas.width, slCanvas.height);
+        slCtx.strokeStyle = '#aaa';
+        slCtx.lineWidth = 1;
+
+        for (let value = 20; value <= 100; value += 20) {
+          slCtx.beginPath();
+          slCtx.arc(centerX, centerY, (value / 100) * maxRadius, 0, 2 * Math.PI);
+          slCtx.stroke();
+          slCtx.fillStyle = '#aaa';
+          slCtx.font = '10px sans-serif';
+          const labelRad = currentMode === 'donut' ? Math.PI / 4 : 0;
+          const labelX = centerX + (value / 100) * maxRadius * Math.cos(-Math.PI / 2 + labelRad);
+          const labelY = centerY + (value / 100) * maxRadius * Math.sin(-Math.PI / 2 + labelRad);
+          slCtx.fillText(`${value}% L`, labelX, labelY - 5);
+        }
+
+        const maxTheta = currentMode === 'sphere' ? 180 : 90;
+        const thetaStep = currentMode === 'sphere' ? 30 : 15;
+        for (let theta = 0; theta <= maxTheta; theta += thetaStep) {
+          const thetaDeg = (theta / maxTheta) * maxTheta;
+          const thetaRad = (thetaDeg * Math.PI / 180);
+          const rotation = currentMode === 'donut' ? Math.PI / 4 : 0;
+          const adjustedThetaRad = thetaRad - Math.PI / 2 + rotation;
+          slCtx.beginPath();
+          slCtx.moveTo(centerX, centerY);
+          slCtx.lineTo(centerX + maxRadius * Math.cos(adjustedThetaRad), centerY + maxRadius * Math.sin(adjustedThetaRad));
+          slCtx.stroke();
+          slCtx.fillStyle = '#aaa';
+          slCtx.font = '10px sans-serif';
+          const labelX = centerX + (maxRadius + 15) * Math.cos(adjustedThetaRad);
+          const labelY = centerY + (maxRadius + 15) * Math.sin(adjustedThetaRad);
+          slCtx.fillText(`${theta}° S`, labelX - 15, labelY + 5);
+        }
+
+        if (currentRelationship !== 'primary') {
+          const rel = relationshipOrder.find(r => r.key === currentRelationship);
+          let symbol = rel.symbol;
+          if (rel.index === 0) {
+            symbol += '¹';
+          } else if (rel.index === 1) {
+            symbol += '²';
+          }
+          const rotation = currentMode === 'donut' ? Math.PI / 4 : 0;
+          const labelThetaDeg = currentMode === 'sphere' ? 90 : 45;
+          const labelThetaRad = (labelThetaDeg * Math.PI / 180) - Math.PI / 2 + rotation + Math.PI;
+          slCtx.fillStyle = '#333';
+          slCtx.font = '16px sans-serif';
+          slCtx.textAlign = 'center';
+          slCtx.textBaseline = 'middle';
+          slCtx.fillText(symbol, centerX + (maxRadius + 20) * Math.cos(labelThetaRad), centerY + (maxRadius + 20) * Math.sin(labelThetaRad));
+        }
+      }
+
+      function drawSLPoints() {
+        const pointRadius = currentMode === 'sphere' ? BASE_POINT_RADIUS * 2 : BASE_POINT_RADIUS;
+        const points = [];
+        const relatedHues = [parseFloat(selectedHue)];
+        if (currentRelationship !== 'primary') {
+          const rel = relationshipOrder.find(r => r.key === currentRelationship);
+          relatedHues.push(((parseFloat(selectedHue) + rel.offset) % 360 + 360) % 360);
+        }
+
+        const N_l_max = Math.floor(maxRadius / (2 * pointRadius));
+        const N_l = Math.max(1, Math.floor(N_l_max * rDensity));
+        for (let i = 0; i <= N_l; i++) {
+          const l = (i / N_l) * 100;
+          if (l < minLightness || l > maxLightness) continue;
+          const pixelRadius = (l / 100) * maxRadius;
+          const maxTheta = currentMode === 'sphere' ? Math.PI : Math.PI / 2;
+          const arcLength = maxTheta * pixelRadius;
+          const N_points = Math.floor(arcLength / (2 * pointRadius));
+          let N_s = Math.max(1, Math.floor(N_points * thetaDensity));
+          if (pixelRadius === 0) N_s = 1;
+          const deltaS = 100 / N_s;
+
+          for (let j = 0; j <= N_s; j++) {
+            const s = j * deltaS;
+            for (const h of relatedHues) {
+              const maxThetaDeg = currentMode === 'sphere' ? 180 : 90;
+              const thetaDeg = h === parseFloat(selectedHue) ? (s / 100) * maxThetaDeg : -(s / 100) * maxThetaDeg;
+              const adjustedThetaDeg = h === parseFloat(selectedHue) ? thetaDeg : thetaDeg + 360;
+              const thetaRad = (adjustedThetaDeg * Math.PI / 180);
+              let rotation = currentMode === 'donut' ? Math.PI / 4 : 0;
+              rotation = currentMode === 'donut' && h !== parseFloat(selectedHue) ? -Math.PI / 4 : rotation;
+              const adjustedThetaRad = thetaRad - Math.PI / 2 + rotation;
+              const radius = (l / 100) * maxRadius;
+              const x = centerX + radius * Math.cos(adjustedThetaRad);
+              const y = centerY + radius * Math.sin(adjustedThetaRad);
+              const hex = hslToHex(h, s, l);
+              const tableTheta = (s === 0 && l === 0) ? 0 : Math.atan2(l, s) * (180 / Math.PI);
+              const sqrtSL = Math.sqrt(s * s + l * l);
+              points.push({
+                code: `H${h}S${s.toFixed(2)}L${l.toFixed(2)}`,
+                hex,
+                h,
+                s,
+                l,
+                theta: tableTheta,
+                sqrtSL,
+                thetaDeg,
+                slX: x,
+                slY: y,
+                plotTheta: thetaDeg
+              });
+            }
+          }
+        }
+
+        points.forEach(point => {
+          const { hex, slX, slY } = point;
+          slCtx.beginPath();
+          slCtx.arc(slX, slY, pointRadius, 0, 2 * Math.PI);
+          slCtx.fillStyle = hex;
+          slCtx.fill();
+        });
+
+        return points;
+      }
+
+      function render() {
+        slCanvasTitle.textContent = `θ = S * ${currentMode === 'sphere' ? '180°' : '90°'} vs. L (Lightness)`;
+        drawSLAxes();
+        const points = drawSLPoints();
+        setupThreeScene(colors, minHue, maxHue, minLightness, maxLightness);
+        setupNewScene(colors, minHue, maxHue, minLightness, maxLightness, selectedHue);
+
+        slCanvas.onmousemove = (event) => {
+          const rect = slCanvas.getBoundingClientRect();
+          const mouseX = event.clientX - rect.left;
+          const mouseY = event.clientY - rect.top;
+
+          let found = false;
+          points.forEach(point => {
+            const { s, l, code, hex, plotTheta, theta, sqrtSL, slX, slY } = point;
+            const dx = mouseX - slX;
+            const dy = mouseY - slY;
+            if (Math.sqrt(dx * dx + dy * dy) < (currentMode === 'sphere' ? BASE_POINT_RADIUS * 2 : BASE_POINT_RADIUS) * 2) {
+              tooltip.style.display = 'block';
+              tooltip.style.left = `${event.clientX + 10}px`;
+              tooltip.style.top = `${event.clientY + 10}px`;
+              tooltip.textContent = `${code}\nHSL(${Math.round(point.h)}°, ${s.toFixed(2)}%, ${l.toFixed(2)}%)\nPlot θ: ${plotTheta.toFixed(2)}°\nTable Theta: ${theta.toFixed(2)}°\nSqrt(S²+L²): ${sqrtSL.toFixed(2)}\n${hex.toUpperCase()}`;
+              found = true;
+            }
+          });
+
+          if (!found) {
+            tooltip.style.display = 'none';
+          }
+        };
+
+        slCanvas.onmouseout = () => {
+          tooltip.style.display = 'none';
+        };
+      }
+
+      function populateHueDropdown() {
+        hueSelect.innerHTML = '<option value="">Select Hue</option>';
+        for (let h = 0; h < 360; h += 5) {
+          const option = document.createElement('option');
+          option.value = h;
+          option.textContent = `${h}°`;
+          hueSelect.appendChild(option);
+        }
+      }
+
+      function loadSampleColors() {
+        statusDiv.textContent = 'Loading sample colors...';
+        rDensity = Math.min(Math.max(parseFloat(rDensityInput.value) || 0.5, 0.1), 1);
+        thetaDensity = Math.min(Math.max(parseFloat(thetaDensityInput.value) || 1, 0.1), 1);
+        rDensityInput.value = rDensity;
+        thetaDensityInput.value = thetaDensity;
+        colors = [];
+
+        // Populate colors for threeCanvas
+        const N_h_max = 72; // 360 / 5 = 72 hues
+        const N_h = Math.max(1, Math.floor(N_h_max * rDensity));
+        const N_l_max = Math.floor(DOME_RADIUS / (2 * BASE_SPHERE_SIZE));
+        const N_l = Math.max(1, Math.floor(N_l_max * rDensity));
+        for (let i = 0; i <= N_h; i++) {
+          const h = (i / N_h) * 360;
+          for (let j = 0; j <= N_l; j++) {
+            const l = (j / N_l) * 100;
+            const pixelRadius = (l / 100) * DOME_RADIUS;
+            const arcLength = Math.PI * pixelRadius;
+            const N_points = Math.floor(arcLength / (2 * BASE_SPHERE_SIZE));
+            let N_s = Math.max(1, Math.floor(N_points * thetaDensity));
+            if (pixelRadius === 0) N_s = 1;
+            const deltaS = 100 / N_s;
+
+            for (let k = 0; k <= N_s; k++) {
+              const s = k * deltaS;
+              const hex = hslToHex(h, s, l);
+              const thetaDeg = (s / 100) * (currentMode === 'sphere' ? 180 : 90);
+              colors.push({
+                h,
+                s,
+                l,
+                hex,
+                thetaDeg
+              });
+            }
+          }
+        }
+
+        statusDiv.textContent = 'Ready to plot points dynamically';
+        populateHueDropdown();
+        render();
+      }
+
+      hueSelect.addEventListener('change', () => {
+        selectedHue = hueSelect.value;
+        render();
+      });
+
+      rDensityInput.addEventListener('change', () => {
+        loadSampleColors();
+      });
+
+      thetaDensityInput.addEventListener('change', () => {
+        loadSampleColors();
+      });
+
+      loadSampleBtn.addEventListener('click', loadSampleColors);
+
+      render();
+    });
+  </script>
+</body>
+</html>
