@@ -33,7 +33,7 @@ export const colorRelationships = {
     { offset: 30, name: 'Adjacent' },
     { offset: -30, name: 'Adjacent' }
   ]
-};
+}; 
 
 export const relationshipOrder = [
   { key: 'complementary', index: 0, offset: 180, name: 'Complementary', symbol: UNICODE.reflect, group: 'complementary' },
