@@ -1,0 +1,474 @@
+  .palette-container {
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+      background: #fff;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      display: flex;
+    }
+
+    .axis-swatches {
+      margin-top: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .axis-swatch-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    .axis-swatch-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      width: 20px;
+    }
+
+    .swatch-line {
+      display: flex;
+      flex-wrap: nowrap;
+      position: relative;
+    }
+
+    .swatch {
+      height: 1rem;
+      cursor: pointer;
+      border-right: 1px solid #f5f5f5;
+      position: relative;
+    }
+
+    .caret {
+      position: absolute;
+      top: 1rem;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 5px solid #333;
+      transform: translateX(-50%);
+      display: none;
+    }
+
+    .input-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .input-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .input-group input {
+      width: 100px;
+      padding: 0.5rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    #colorSwatch {
+      width: 75px;
+      height: 50px;
+      border: 1px outset #fff;
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .palette-input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .palette-input-group label {
+      font-size: 0.9rem;
+    }
+
+    .palette-input-group input {
+      width: 60px;
+      padding: 0.25rem .5rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .saturation-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .saturation-input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .saturation-input-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .saturation-input-group input {
+      width: 55px;
+      padding: 2px 5px;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .visibility-controls, .settings-controls {
+      position: relative;
+      display: inline-block;
+    }
+
+    .visibility-button, .settings-button {
+      padding: 0.25rem 1rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background: #eee;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .visibility-button:hover, .settings-button:hover {
+      background: #ddd;
+    }
+
+    .visibility-dropdown, .settings-dropdown {
+      display: none;
+      position: absolute;
+      background: #fff;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      z-index: 1000;
+      min-width: 200px;
+      box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
+      border-bottom: none;
+      right: 0;
+      margin-top:1px;
+    }
+
+     .visibility-dropdown.active, .settings-dropdown.active {
+      display: block;
+    }
+
+    .visibility-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      justify-content: space-between;
+      border-bottom: 1px solid #aaa;
+    }
+
+    .visibility-option:hover {
+      background-color: #ddd;
+    }
+
+    .visibility-option input {
+      cursor: pointer;
+    }
+
+    .visibility-option label {
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .settings-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #aaa;
+    }
+
+    .settings-group span {
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .switch-label {
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 30px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+      border: 1px inset #ccc;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 25px;
+      width: 25px;
+      left: 2px;
+      top: 1px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+      border: 1px outset #ccc;
+    }
+
+    input:checked + .slider {
+      background-color: #666;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .palette-swatches {
+      display: grid;
+    }
+
+    .primary-container {
+      background: #ddd;
+      border-radius: 8px;
+    }
+
+    .palette-swatch-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 10px;
+      position: relative;
+    }
+
+    .palette-swatch-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      width: 120px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .palette-swatch-group .swatch-info label {
+      width: auto;
+    }
+
+    .palette-swatch-line {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0.5rem;
+    }
+
+    .palette-swatch-column {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .palette-swatch-column .palette-swatch-group {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .palette-swatch-column .palette-swatch-group label {
+      width: auto;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .swatch-and-dropdown-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      position: relative;
+      flex: 1;
+    }
+
+    .swatch-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .swatch-lightness {
+      font-size: 0.7rem;
+      color: #333;
+      text-align: center;
+      order: -1; /* Place above swatch */
+    }
+
+    .palette-swatch {
+      min-width: 60px;
+      height: 50px;
+      border: 1px solid #f5f5f5;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+    }
+
+    .palette-swatch.primary {
+      border: 2px solid #000;
+    }
+
+    .palette-swatch .hex-code {
+      font-size: 0.7rem;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .swatch-info {
+      font-size: 0.8rem;
+      color: #333;
+      font-weight: bold;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      justify-content: center;
+    }
+
+    .swatch-info span {
+      display: block;
+    }
+
+    .swatch-info input {
+      width: 50px;
+      padding: 0.2rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .palette-swatch-column .swatch-info {
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    .swatch-saturation-info {
+      font-size: 0.8rem;
+      color: #333;
+      font-weight: bold;
+      text-align: center;
+      display: flex;
+      align-items: center;
+    }
+
+    .palette-swatch-tooltip {
+      position: absolute;
+      background-color: white;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      pointer-events: none;
+      display: none;
+      z-index: 1000;
+      white-space: nowrap;
+      top: -70px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .palette-swatch:hover .palette-swatch-tooltip {
+      display: block;
+    }
+
+    .palette-header {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #aaa;
+    }
+
+    .palette-button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 30px;
+      height: 30px;
+      background: #eee;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      align-self: end;
+    }
+
+    .palette-button:hover {
+      background: #ddd;
+    }
+
+    .saturation-dropdown {
+      display: none;
+      flex-direction: column;
+      padding:5px;
+      background: #f9f9f9;
+      border: 1px outset #eee;
+      border-radius: 8px;
+      box-shadow: 0px 4px 3px 3px rgba(0,0,0, .2);
+      position: absolute;
+      margin-top: 4px;
+      top: 100%;
+      left: -10px;
+      width: 100%;
+      z-index: 10;
+    }
+
+    .saturation-dropdown.active {
+      display: flex;
+    }
+
+    .saturation-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+    }
+
+    .saturation-row:hover {
+      background-color: #eee;
+    }
+    .symbols{
+      font-family: 'Segoe UI Symbol', 'Segoe UI', sans-serif;
+    }

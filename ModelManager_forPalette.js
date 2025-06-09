@@ -47,7 +47,33 @@ export const relationshipOrder = [
   { key: 'triad-1', index: 0, offset: 120, name: '1st Triad', symbol: UNICODE.triangle, group: 'triad' },
   { key: 'splitComplementary-1', index: 0, offset: 150, name: '1st Split-Complementary', symbol: UNICODE.circled_y, group: 'splitComplementary' }
 ];
+export function getAngleFromValue(_value, _range) {
+  const value = parseFloat(_value);
+  if (value === 1) return parseFloat(2 * Math.PI);
+  if (value === 0) return 0;
+  const sinValue = parseFloat(2 * value - 1);
+  if (Math.abs(sinValue) > 1) return 0;
+  const angle = parseFloat((_range / Math.PI) * Math.asin(sinValue) + Math.PI / 2);
+  return angle;
+}
 
+export function getValueFromAngle(_theta, _range) {
+  const theta = parseFloat(_theta);
+  const value = parseFloat((Math.sin((theta / (_range / Math.PI)) - (Math.PI / 2)) + 1) / 2);
+  return value;
+}
+
+export function toDegrees(radians) {
+  return parseFloat((radians * (180 / Math.PI)) % 360);
+}
+
+export function toRadians(degrees) {
+  return parseFloat((degrees % 360) * (Math.PI / 180));
+}
+
+export function normRadians(radians) {
+  return parseFloat(((radians % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI));
+}
 export class ModelManager {
   constructor(paletteManager = null) {
     this.state = {
