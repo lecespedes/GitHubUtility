@@ -34,7 +34,7 @@ export const colorRelationships = {
     { offset: -30, name: 'Adjacent' }
   ]
 }; 
-
+ 
 export const relationshipOrder = [
   { key: 'complementary', index: 0, offset: 180, name: 'Complementary', symbol: UNICODE.reflect, group: 'complementary' },
   { key: 'splitComplementary-2', index: 1, offset: 210, name: '2nd Split-Complementary', symbol: UNICODE.circled_y, group: 'splitComplementary' },
