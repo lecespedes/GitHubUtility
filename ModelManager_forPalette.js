@@ -8,7 +8,7 @@ export const UNICODE = {
   eye: "\u{1F441}", // 👁 Eye
   theta: "\u03B8",
   phi: "\u03C6",
-  palette: "\uE2B1",
+  palette: "\u{E2B1}",
   sun: "\uE284",
   gear: "\uE115",
   rainbow: "\u{1F308}\u{FE0E}"

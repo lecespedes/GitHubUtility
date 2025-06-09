@@ -529,8 +529,8 @@
   </div>
 
   <script type="module">
-    import { ModelManager, UNICODE, colorRelationships, relationshipOrder } from './ModelManager_forPalette.js';
-    //import { ModelManager, UNICODE, colorRelationships, relationshipOrder } from 'https://cdn.jsdelivr.net/gh/lecespedes/GitHubUtility@main/ModelManager_forPalette.js';
+    //import { ModelManager, UNICODE, colorRelationships, relationshipOrder } from './ModelManager_forPalette.js';
+    import { ModelManager, UNICODE, colorRelationships, relationshipOrder } from 'https://cdn.jsdelivr.net/gh/lecespedes/GitHubUtility@main/ModelManager_forPalette.js';
 
     function getAngleFromValue(_value, _range) {
       const value = parseFloat(_value);
@@ -985,7 +985,7 @@
           const rainbowButton = document.createElement('div');
           rainbowButton.className = 'rainbow-button symbols';
           //rainbowButton.textContent = '🌈';
-          rainbowButton.textContent = `${UNICODE.palette}`;
+          rainbowButton.textContent = UNICODE.palette;
           group.appendChild(rainbowButton);
 
           // Wrapper for swatches and dropdown
