@@ -1,5 +1,5 @@
-    import { ModelManager, UNICODE, colorRelationships, relationshipOrder, getAngleFromValue, getValueFromAngle, toDegrees, toRadians, normRadians } from './ModelManager_forPalette.js';
-    //import { ModelManager, UNICODE, colorRelationships, relationshipOrder, getAngleFromValue, getValueFromAngle, toDegrees, toRadians, normRadians } from 'https://cdn.jsdelivr.net/gh/lecespedes/GitHubUtility@main/ModelManager_forPalette.js';
+    //import { ModelManager, UNICODE, colorRelationships, relationshipOrder, getAngleFromValue, getValueFromAngle, toDegrees, toRadians, normRadians } from './ModelManager_forPalette.js';
+    import { ModelManager, UNICODE, colorRelationships, relationshipOrder, getAngleFromValue, getValueFromAngle, toDegrees, toRadians, normRadians } from 'https://cdn.jsdelivr.net/gh/lecespedes/GitHubUtility@main/ModelManager_forPalette.js';
 
 export class PaletteManager {
   constructor(containerElement) {
