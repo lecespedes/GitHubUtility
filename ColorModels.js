@@ -1,6 +1,8 @@
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import WebGL from 'three/addons/capabilities/WebGL.js';
+//import * as three from 'three';
+import * as three from "https://cdn.jsdelivr.net/npm/three@v0.176.0/build/three.module.js";
+//import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OrbitControls } from  "https://cdn.jsdelivr.net/npm/three@v0.176.0/examples/jsm/controls/OrbitControls.js";
+//import WebGL from 'three/addons/capabilities/WebGL.js';
 
 // Global configuration
 const config = {
@@ -46,9 +48,9 @@ const colorRelationships = {
 
 export class ColorModel {
   constructor(canvas, width, height) {
-    this.scene = new THREE.Scene();
+    this.scene = new three.Scene();
     this.camera = null;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    this.renderer = new three.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setSize(width || 500, height || 400);
     this.controls = null;
     this.marker = null;
@@ -60,7 +62,7 @@ export class ColorModel {
   }
 
   static createAxis(start, end, colorFunc, segments = config.AXIS_SEGMENTS) {
-    const axisGroup = new THREE.Group();
+    const axisGroup = new three.Group();
     for (let i = 0; i < segments; i++) {
       const t = i / (segments - 1);
       const rgb = colorFunc(t);
@@ -68,13 +70,13 @@ export class ColorModel {
       const x = start.x + t * (end.x - start.x);
       const y = start.y + t * (end.y - start.y);
       const z = start.z + t * (end.z - start.z);
-      const path = new THREE.LineCurve3(
-        new THREE.Vector3(x, y, z),
-        new THREE.Vector3(x + (end.x - start.x) / segments, y + (end.y - start.y) / segments, z + (end.z - start.z) / segments)
+      const path = new three.LineCurve3(
+        new three.Vector3(x, y, z),
+        new three.Vector3(x + (end.x - start.x) / segments, y + (end.y - start.y) / segments, z + (end.z - start.z) / segments)
       );
-      const tubeGeometry = new THREE.TubeGeometry(path, 1, config.AXIS_THICKNESS, 8, false);
-      const tubeMaterial = new THREE.MeshBasicMaterial({ color: color });
-      const tubeSegment = new THREE.Mesh(tubeGeometry, tubeMaterial);
+      const tubeGeometry = new three.TubeGeometry(path, 1, config.AXIS_THICKNESS, 8, false);
+      const tubeMaterial = new three.MeshBasicMaterial({ color: color });
+      const tubeSegment = new three.Mesh(tubeGeometry, tubeMaterial);
       axisGroup.add(tubeSegment);
     }
     return axisGroup;
@@ -90,9 +92,9 @@ export class ColorModel {
     context.textAlign = 'left';
     context.textBaseline = 'middle';
     context.fillText(text, 10, 128);
-    const texture = new THREE.CanvasTexture(canvas);
-    const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-    const sprite = new THREE.Sprite(spriteMaterial);
+    const texture = new three.CanvasTexture(canvas);
+    const spriteMaterial = new three.SpriteMaterial({ map: texture });
+    const sprite = new three.Sprite(spriteMaterial);
     sprite.position.copy(position);
     sprite.scale.set(40, 40, 1);
     return sprite;
@@ -189,14 +191,14 @@ export class Cube extends ColorModel {
     super(canvas, width, height);
     this.type = type; // 'rgb' or 'hsl'
     this.plotSettings = {};
-    this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, config.CUBE_SIZE * 5);
+    this.camera = new three.PerspectiveCamera(45, width / height, 0.1, config.CUBE_SIZE * 5);
     this.camera.position.set(config.CUBE_SIZE, config.CYLINDER_SIZE * 1.5, config.CUBE_SIZE * 3);
     this.camera.lookAt(config.CUBE_SIZE / 2, config.CUBE_SIZE / 2, config.CUBE_SIZE / 2);
     this.camera.updateProjectionMatrix();
     this.renderer.setClearColor(0xffffff, 1);
-    this.markerGeometry = new THREE.SphereGeometry(config.MARKER_RADIUS, 32, 32);
-    this.markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    this.plotPointGeometry = new THREE.SphereGeometry(config.PLOT_POINT_RADIUS, 8, 8);
+    this.markerGeometry = new three.SphereGeometry(config.MARKER_RADIUS, 32, 32);
+    this.markerMaterial = new three.MeshBasicMaterial({ color: 0xff0000 });
+    this.plotPointGeometry = new three.SphereGeometry(config.PLOT_POINT_RADIUS, 8, 8);
   }
 
   initializeElements() {
@@ -208,15 +210,15 @@ export class Cube extends ColorModel {
     this.controls.maxDistance = 800;
     this.controls.target.set(config.CUBE_SIZE / 2, config.CUBE_SIZE / 2, config.CUBE_SIZE / 2);
 
-    const cubeGeometry = new THREE.BoxGeometry(config.CUBE_SIZE, config.CUBE_SIZE, config.CUBE_SIZE);
-    const cubeEdges = new THREE.EdgesGeometry(cubeGeometry);
-    const innerWallMaterial = new THREE.MeshBasicMaterial({
+    const cubeGeometry = new three.BoxGeometry(config.CUBE_SIZE, config.CUBE_SIZE, config.CUBE_SIZE);
+    const cubeEdges = new three.EdgesGeometry(cubeGeometry);
+    const innerWallMaterial = new three.MeshBasicMaterial({
       color: config.INNER_WALL_COLOR,
       transparent: true,
       opacity: 0.2,
-      side: THREE.BackSide
+      side: three.BackSide
     });
-    const edgeMaterial = new THREE.LineDashedMaterial({
+    const edgeMaterial = new three.LineDashedMaterial({
       color: 0x000000,
       linewidth: 1,
       scale: 1,
@@ -225,23 +227,23 @@ export class Cube extends ColorModel {
       depthWrite: false
     });
 
-    const cubeWalls = new THREE.Mesh(cubeGeometry, innerWallMaterial);
+    const cubeWalls = new three.Mesh(cubeGeometry, innerWallMaterial);
     cubeWalls.position.set(config.CUBE_SIZE / 2, config.CUBE_SIZE / 2, config.CUBE_SIZE / 2);
     this.scene.add(cubeWalls);
 
-    const cubeEdgesLines = new THREE.LineSegments(cubeEdges, edgeMaterial);
+    const cubeEdgesLines = new three.LineSegments(cubeEdges, edgeMaterial);
     cubeEdgesLines.computeLineDistances();
     cubeEdgesLines.position.set(config.CUBE_SIZE / 2, config.CUBE_SIZE / 2, config.CUBE_SIZE / 2);
     this.scene.add(cubeEdgesLines);
 
-    this.marker = new THREE.Mesh(this.markerGeometry, this.markerMaterial);
+    this.marker = new three.Mesh(this.markerGeometry, this.markerMaterial);
     this.scene.add(this.marker);
 
-    this.axesGroup = new THREE.Group();
+    this.axesGroup = new three.Group();
     this.axesGroup.name = `${this.type}Axes`;
     this.scene.add(this.axesGroup);
 
-    this.markerLinesGroup = new THREE.Group();
+    this.markerLinesGroup = new three.Group();
     this.markerLinesGroup.name = `${this.type}MarkerLines`;
     this.scene.add(this.markerLinesGroup);
   }
@@ -268,14 +270,14 @@ export class Cube extends ColorModel {
       else if (index === 1) start.y = isActive ? plane0 : plane1;
       else start.z = isActive ? plane0 : plane1;
       if (start.distanceTo(end) > 0.001) {
-        const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-        const material = new THREE.LineDashedMaterial({
+        const geometry = new three.BufferGeometry().setFromPoints([start, end]);
+        const material = new three.LineDashedMaterial({
           color: 0x000000,
           linewidth: 1,
           dashSize: config.MARKER_LINE_DASH_SIZE,
           gapSize: config.MARKER_LINE_DASH_SIZE
         });
-        const line = new THREE.Line(geometry, material);
+        const line = new three.Line(geometry, material);
         line.computeLineDistances();
         this.markerLinesGroup.add(line);
       }
@@ -323,16 +325,16 @@ export class RGBCube extends Cube {
     this.axesGroup.clear();
 
     const axisConfigs = [
-      { label: 'R', end: new THREE.Vector3(config.CUBE_SIZE, 0, 0), colorFunc: t => ({ r: Math.round(t * 255), g: color.g, b: color.b }) },
-      { label: 'G', end: new THREE.Vector3(0, config.CUBE_SIZE, 0), colorFunc: t => ({ r: color.r, g: Math.round(t * 255), b: color.b }) },
-      { label: 'B', end: new THREE.Vector3(0, 0, config.CUBE_SIZE), colorFunc: t => ({ r: color.r, g: color.g, b: Math.round(t * 255) }) }
+      { label: 'R', end: new three.Vector3(config.CUBE_SIZE, 0, 0), colorFunc: t => ({ r: Math.round(t * 255), g: color.g, b: color.b }) },
+      { label: 'G', end: new three.Vector3(0, config.CUBE_SIZE, 0), colorFunc: t => ({ r: color.r, g: Math.round(t * 255), b: color.b }) },
+      { label: 'B', end: new three.Vector3(0, 0, config.CUBE_SIZE), colorFunc: t => ({ r: color.r, g: color.g, b: Math.round(t * 255) }) }
     ];
 
     axisConfigs.forEach(({ label, end, colorFunc }, index) => {
-      const axis = ColorModel.createAxis(new THREE.Vector3(0, 0, 0), end, colorFunc);
+      const axis = ColorModel.createAxis(new three.Vector3(0, 0, 0), end, colorFunc);
       this.axesGroup.add(axis);
       const labelPos = end.clone().add(
-        new THREE.Vector3(
+        new three.Vector3(
           index === 0 ? config.LABEL_DISTANCE : 0,
           index === 1 ? config.LABEL_DISTANCE : 0,
           index === 2 ? config.LABEL_DISTANCE : 0
@@ -363,7 +365,7 @@ export class RGBCube extends Cube {
     }
     if (!enabled) return;
 
-    this.plotGroups[groupKey] = new THREE.Group();
+    this.plotGroups[groupKey] = new three.Group();
     this.plotGroups[groupKey].name = `${type}PlotPoints`;
     const numSwatches = (100 / config.swatchCtrlStep) + 1;
     const { h = 0, s = 0, l = 0 } = ColorModel.hexToHSL(ColorModel.rgbToHex(this.color.r, this.color.g, this.color.b));
@@ -373,9 +375,9 @@ export class RGBCube extends Cube {
         const normalizedVal = i * config.swatchCtrlStep;
         const hVal = (359 * normalizedVal) / 100;
         const rgb = ColorModel.hslToRGB(hVal, s, l);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         point.position.set(
           rgb.r * config.CUBE_SIZE / 255,
           rgb.g * config.CUBE_SIZE / 255,
@@ -388,9 +390,9 @@ export class RGBCube extends Cube {
         const normalizedVal = i * config.swatchCtrlStep;
         const sVal = (100 * normalizedVal) / 100;
         const rgb = ColorModel.hslToRGB(h, sVal, l);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         point.position.set(
           rgb.r * config.CUBE_SIZE / 255,
           rgb.g * config.CUBE_SIZE / 255,
@@ -403,9 +405,9 @@ export class RGBCube extends Cube {
         const normalizedVal = i * config.swatchCtrlStep;
         const lVal = (100 * normalizedVal) / 100;
         const rgb = ColorModel.hslToRGB(h, s, lVal);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         point.position.set(
           rgb.r * config.CUBE_SIZE / 255,
           rgb.g * config.CUBE_SIZE / 255,
@@ -461,16 +463,16 @@ export class HSLCube extends Cube {
     this.axesGroup.clear();
 
     const axisConfigs = [
-      { label: 'H', end: new THREE.Vector3(config.CUBE_SIZE, 0, 0), colorFunc: t => ColorModel.hslToRGB(t * 359, color.s, color.l) },
-      { label: 'S', end: new THREE.Vector3(0, config.CUBE_SIZE, 0), colorFunc: t => ColorModel.hslToRGB(color.h, t * 100, color.l) },
-      { label: 'L', end: new THREE.Vector3(0, 0, config.CUBE_SIZE), colorFunc: t => ColorModel.hslToRGB(color.h, color.s, t * 100) }
+      { label: 'H', end: new three.Vector3(config.CUBE_SIZE, 0, 0), colorFunc: t => ColorModel.hslToRGB(t * 359, color.s, color.l) },
+      { label: 'S', end: new three.Vector3(0, config.CUBE_SIZE, 0), colorFunc: t => ColorModel.hslToRGB(color.h, t * 100, color.l) },
+      { label: 'L', end: new three.Vector3(0, 0, config.CUBE_SIZE), colorFunc: t => ColorModel.hslToRGB(color.h, color.s, t * 100) }
     ];
 
     axisConfigs.forEach(({ label, end, colorFunc }, index) => {
-      const axis = ColorModel.createAxis(new THREE.Vector3(0, 0, 0), end, colorFunc);
+      const axis = ColorModel.createAxis(new three.Vector3(0, 0, 0), end, colorFunc);
       this.axesGroup.add(axis);
       const labelPos = end.clone().add(
-        new THREE.Vector3(
+        new three.Vector3(
           index === 0 ? config.LABEL_DISTANCE : 0,
           index === 1 ? config.LABEL_DISTANCE : 0,
           index === 2 ? config.LABEL_DISTANCE : 0
@@ -501,7 +503,7 @@ export class HSLCube extends Cube {
     }
     if (!enabled) return;
 
-    this.plotGroups[groupKey] = new THREE.Group();
+    this.plotGroups[groupKey] = new three.Group();
     this.plotGroups[groupKey].name = `${type}PlotPoints`;
     const numSwatches = (100 / config.swatchCtrlStep) + 1;
     const rgb = ColorModel.hslToRGB(this.color.h, this.color.s, this.color.l);
@@ -513,9 +515,9 @@ export class HSLCube extends Cube {
         const rVal = (255 * normalizedVal) / 100;
         const hex = ColorModel.rgbToHex(Math.round(rVal), Math.round(g), Math.round(b));
         const hsl = ColorModel.hexToHSL(hex);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(rVal / 255, g / 255, b / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         point.position.set(
           parseFloat(hsl.h) * config.CUBE_SIZE / 359,
           parseFloat(hsl.s) * config.CUBE_SIZE / 100,
@@ -529,9 +531,9 @@ export class HSLCube extends Cube {
         const gVal = (255 * normalizedVal) / 100;
         const hex = ColorModel.rgbToHex(Math.round(r), Math.round(gVal), Math.round(b));
         const hsl = ColorModel.hexToHSL(hex);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(r / 255, gVal / 255, b / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         point.position.set(
           parseFloat(hsl.h) * config.CUBE_SIZE / 359,
           parseFloat(hsl.s) * config.CUBE_SIZE / 100,
@@ -545,9 +547,9 @@ export class HSLCube extends Cube {
         const bVal = (255 * normalizedVal) / 100;
         const hex = ColorModel.rgbToHex(Math.round(r), Math.round(g), Math.round(bVal));
         const hsl = ColorModel.hexToHSL(hex);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(r / 255, g / 255, bVal / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         point.position.set(
           parseFloat(hsl.h) * config.CUBE_SIZE / 359,
           parseFloat(hsl.s) * config.CUBE_SIZE / 100,
@@ -565,16 +567,16 @@ export class Cylinder extends ColorModel {
     super(canvas, width, height);
     this.color = { h: 0, s: 100, l: 50 };
     this.plotSettings = { r: false, g: false, b: false, h: true };
-    this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, config.CYLINDER_SIZE * 5);
+    this.camera = new three.PerspectiveCamera(45, width / height, 0.1, config.CYLINDER_SIZE * 5);
     this.camera.position.set(config.CYLINDER_SIZE, config.CYLINDER_SIZE * 2, config.CYLINDER_SIZE * 2.5);
     this.camera.lookAt(0, config.CYLINDER_SIZE / 2, 0);
     this.camera.updateProjectionMatrix();
     this.renderer.setClearColor(0xffffff, 1);
-    this.markerGeometry = new THREE.SphereGeometry(config.MARKER_RADIUS, 32, 32);
-    this.markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    this.plotPointGeometry = new THREE.SphereGeometry(config.PLOT_POINT_RADIUS, 8, 8);
-    this.coneGeometry = new THREE.ConeGeometry(config.CONE_RADIUS, config.CONE_HEIGHT, 32);
-    this.shapeMaterial = new THREE.LineBasicMaterial({ color: 0x999999, linewidth: 1 });
+    this.markerGeometry = new three.SphereGeometry(config.MARKER_RADIUS, 32, 32);
+    this.markerMaterial = new three.MeshBasicMaterial({ color: 0xff0000 });
+    this.plotPointGeometry = new three.SphereGeometry(config.PLOT_POINT_RADIUS, 8, 8);
+    this.coneGeometry = new three.ConeGeometry(config.CONE_RADIUS, config.CONE_HEIGHT, 32);
+    this.shapeMaterial = new three.LineBasicMaterial({ color: 0x999999, linewidth: 1 });
     this.hueLabelsGroup = null;
     this.relationshipGroups = {};
     this.tetradSquare = null;
@@ -606,7 +608,7 @@ export class Cylinder extends ColorModel {
     this.clearImportedData();
     this.importedData = data;
 
-    this.importedGroup = new THREE.Group();
+    this.importedGroup = new three.Group();
     this.importedGroup.name = 'importedPoints';
     data.forEach((item, index) => {
       const { hsl: { h, s, l }, hex, code } = item;
@@ -616,9 +618,9 @@ export class Cylinder extends ColorModel {
       const y = (l / 100) * config.CYLINDER_SIZE; // Lightness as height
       const z = radius * Math.sin(theta);
 
-      const geometry = new THREE.SphereGeometry(config.PLOT_POINT_RADIUS, 8, 8);
-      const material = new THREE.MeshBasicMaterial({ color: hex });
-      const mesh = new THREE.Mesh(geometry, material);
+      const geometry = new three.SphereGeometry(config.PLOT_POINT_RADIUS, 8, 8);
+      const material = new three.MeshBasicMaterial({ color: hex });
+      const mesh = new three.Mesh(geometry, material);
       mesh.position.set(x, y, z);
       mesh.userData = { code, hsl: { h, s, l }, hex };
       this.importedGroup.add(mesh);
@@ -649,13 +651,13 @@ export class Cylinder extends ColorModel {
     this.controls.maxDistance = 1000;
     this.controls.target.set(0, config.CYLINDER_SIZE / 2, 0);
 
-    const innerWallMaterial = new THREE.MeshBasicMaterial({
+    const innerWallMaterial = new three.MeshBasicMaterial({
       color: config.INNER_WALL_COLOR,
       transparent: true,
       opacity: 0.2,
-      side: THREE.BackSide
+      side: three.BackSide
     });
-    const edgeMaterial = new THREE.LineDashedMaterial({
+    const edgeMaterial = new three.LineDashedMaterial({
       color: 0x000000,
       linewidth: 1,
       scale: 1,
@@ -664,35 +666,35 @@ export class Cylinder extends ColorModel {
       depthWrite: false
     });
 
-    const cylinderGeometry = new THREE.CylinderGeometry(config.CYLINDER_SIZE, config.CYLINDER_SIZE, config.CYLINDER_SIZE, 24, 1, true);
-    const cylinderEdges = new THREE.EdgesGeometry(cylinderGeometry);
-    const cylinderCapsGeometry = new THREE.CylinderGeometry(config.CYLINDER_SIZE, config.CYLINDER_SIZE, 0.1, 24);
-    const cylinderCapsWireframe = new THREE.WireframeGeometry(cylinderCapsGeometry);
+    const cylinderGeometry = new three.CylinderGeometry(config.CYLINDER_SIZE, config.CYLINDER_SIZE, config.CYLINDER_SIZE, 24, 1, true);
+    const cylinderEdges = new three.EdgesGeometry(cylinderGeometry);
+    const cylinderCapsGeometry = new three.CylinderGeometry(config.CYLINDER_SIZE, config.CYLINDER_SIZE, 0.1, 24);
+    const cylinderCapsWireframe = new three.WireframeGeometry(cylinderCapsGeometry);
 
-    const hslCylinderWalls = new THREE.Mesh(cylinderGeometry, innerWallMaterial);
+    const hslCylinderWalls = new three.Mesh(cylinderGeometry, innerWallMaterial);
     hslCylinderWalls.position.set(0, config.CYLINDER_SIZE / 2, 0);
     this.scene.add(hslCylinderWalls);
 
-    const hslCylinderWireFrameTop = new THREE.LineSegments(cylinderCapsWireframe, edgeMaterial);
+    const hslCylinderWireFrameTop = new three.LineSegments(cylinderCapsWireframe, edgeMaterial);
     hslCylinderWireFrameTop.computeLineDistances();
     hslCylinderWireFrameTop.position.set(0, config.CYLINDER_SIZE, 0);
     this.scene.add(hslCylinderWireFrameTop);
 
-    const hslCylinderWireFrameBottom = new THREE.LineSegments(cylinderCapsWireframe, edgeMaterial);
+    const hslCylinderWireFrameBottom = new three.LineSegments(cylinderCapsWireframe, edgeMaterial);
     hslCylinderWireFrameBottom.computeLineDistances();
     hslCylinderWireFrameBottom.position.set(0, 0, 0);
     this.scene.add(hslCylinderWireFrameBottom);
 
-    const hslCylinderWallEdges = new THREE.LineSegments(cylinderEdges, edgeMaterial);
+    const hslCylinderWallEdges = new three.LineSegments(cylinderEdges, edgeMaterial);
     hslCylinderWallEdges.computeLineDistances();
     hslCylinderWallEdges.position.set(0, config.CYLINDER_SIZE / 2, 0);
     this.scene.add(hslCylinderWallEdges);
 
-    this.hueLabelsGroup = new THREE.Group();
+    this.hueLabelsGroup = new three.Group();
     this.hueLabelsGroup.name = 'hueLabels';
     for (let angle = 15; angle < 360; angle += 15) {
       const theta = (angle * Math.PI) / 180;
-      const labelPos = new THREE.Vector3(
+      const labelPos = new three.Vector3(
         310 * Math.cos(theta),
         0,
         310 * Math.sin(theta)
@@ -703,16 +705,16 @@ export class Cylinder extends ColorModel {
     this.scene.add(this.hueLabelsGroup);
 
     Object.keys(colorRelationships).forEach(relKey => {
-      this.relationshipGroups[relKey] = new THREE.Group();
+      this.relationshipGroups[relKey] = new three.Group();
       this.relationshipGroups[relKey].name = `${relKey}Markers`;
       this.relationshipGroups[relKey].position.set(0, 0, 0);
       colorRelationships[relKey].forEach((rel, index) => {
         const isPrimary = relKey === 'primary';
         const geometry = isPrimary
-          ? new THREE.OctahedronGeometry(config.CONE_RADIUS)
+          ? new three.OctahedronGeometry(config.CONE_RADIUS)
           : this.coneGeometry;
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const marker = new THREE.Mesh(geometry, material);
+        const material = new three.MeshBasicMaterial({ color: 0x00ff00 });
+        const marker = new three.Mesh(geometry, material);
         if (!isPrimary) marker.rotation.x = Math.PI;
         const theta = (rel.offset * Math.PI) / 180;
         marker.position.set(
@@ -726,35 +728,35 @@ export class Cylinder extends ColorModel {
       this.scene.add(this.relationshipGroups[relKey]);
     });
 
-    this.tetradSquare = new THREE.Group();
+    this.tetradSquare = new three.Group();
     this.tetradSquare.name = 'tetradSquare';
     this.scene.add(this.tetradSquare);
 
-    this.triadTriangle = new THREE.Group();
+    this.triadTriangle = new three.Group();
     this.triadTriangle.name = 'triadTriangle';
     this.scene.add(this.triadTriangle);
 
-    const originGeometry = new THREE.SphereGeometry(config.MARKER_RADIUS, 8, 8);
-    const originMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-    const originMarker = new THREE.Mesh(originGeometry, originMaterial);
+    const originGeometry = new three.SphereGeometry(config.MARKER_RADIUS, 8, 8);
+    const originMaterial = new three.MeshBasicMaterial({ color: 0x000000 });
+    const originMarker = new three.Mesh(originGeometry, originMaterial);
     originMarker.position.set(0, 0, 0);
     this.scene.add(originMarker);
 
-    this.marker = new THREE.Mesh(this.markerGeometry, this.markerMaterial);
+    this.marker = new three.Mesh(this.markerGeometry, this.markerMaterial);
     this.scene.add(this.marker);
 
-    this.axesGroup = new THREE.Group();
+    this.axesGroup = new three.Group();
     this.axesGroup.name = 'hslCylinderAxes';
     this.scene.add(this.axesGroup);
 
-    this.markerLinesGroup = new THREE.Group();
+    this.markerLinesGroup = new three.Group();
     this.markerLinesGroup.name = 'hslCylinderMarkerLines';
     this.scene.add(this.markerLinesGroup);
   }
 
   initializeMouseEvents() {
-    this.raycaster = new THREE.Raycaster();
-    this.mouse = new THREE.Vector2();
+    this.raycaster = new three.Raycaster();
+    this.mouse = new three.Vector2();
     this.renderer.domElement.addEventListener('mousemove', (event) => {
       event.preventDefault();
       if (!this.tooltip || this.renderer.domElement.style.display === 'none') return;
@@ -828,7 +830,7 @@ export class Cylinder extends ColorModel {
         const relRGB = ColorModel.hslToRGB(relHue, color.s, color.l);
         const relColor = (relRGB.r << 16) | (relRGB.g << 8) | relRGB.b;
         const theta = (relHue * Math.PI) / 180;
-        const relPos = new THREE.Vector3(
+        const relPos = new three.Vector3(
           config.CYLINDER_SIZE * Math.cos(theta),
           config.CYLINDER_SIZE + 45,
           config.CYLINDER_SIZE * Math.sin(theta)
@@ -843,7 +845,7 @@ export class Cylinder extends ColorModel {
       if (child.material) child.material.dispose();
     });
     this.tetradSquare.clear();
-    this.tetradSquare = new THREE.Group();
+    this.tetradSquare = new three.Group();
     this.tetradSquare.name = 'tetradSquare';
     const tetradOffsets = [
       colorRelationships.primary[0].offset,
@@ -854,14 +856,14 @@ export class Cylinder extends ColorModel {
     const tetradPoints = tetradOffsets.map(offset => {
       const relHue = (color.h + offset) % 360;
       const theta = (relHue * Math.PI) / 180;
-      return new THREE.Vector3(
+      return new three.Vector3(
         config.CYLINDER_SIZE * Math.cos(theta),
         config.CYLINDER_SIZE + 45,
         config.CYLINDER_SIZE * Math.sin(theta)
       );
     });
-    const squareGeometry = new THREE.BufferGeometry().setFromPoints(tetradPoints);
-    const square = new THREE.LineLoop(squareGeometry, this.shapeMaterial);
+    const squareGeometry = new three.BufferGeometry().setFromPoints(tetradPoints);
+    const square = new three.LineLoop(squareGeometry, this.shapeMaterial);
     square.computeLineDistances();
     this.tetradSquare.add(square);
     this.scene.add(this.tetradSquare);
@@ -871,7 +873,7 @@ export class Cylinder extends ColorModel {
       if (child.material) child.material.dispose();
     });
     this.triadTriangle.clear();
-    this.triadTriangle = new THREE.Group();
+    this.triadTriangle = new three.Group();
     this.triadTriangle.name = 'triadTriangle';
     const triadOffsets = [
       colorRelationships.primary[0].offset,
@@ -881,14 +883,14 @@ export class Cylinder extends ColorModel {
     const triadPoints = triadOffsets.map(offset => {
       const relHue = (color.h + offset) % 360;
       const theta = (relHue * Math.PI) / 180;
-      return new THREE.Vector3(
+      return new three.Vector3(
         config.CYLINDER_SIZE * Math.cos(theta),
         config.CYLINDER_SIZE + 45,
         config.CYLINDER_SIZE * Math.sin(theta)
       );
     });
-    const triangleGeometry = new THREE.BufferGeometry().setFromPoints(triadPoints);
-    const triangle = new THREE.LineLoop(triangleGeometry, this.shapeMaterial);
+    const triangleGeometry = new three.BufferGeometry().setFromPoints(triadPoints);
+    const triangle = new three.LineLoop(triangleGeometry, this.shapeMaterial);
     triangle.computeLineDistances();
     this.triadTriangle.add(triangle);
     this.scene.add(this.triadTriangle);
@@ -898,17 +900,17 @@ export class Cylinder extends ColorModel {
       if (child.material) child.material.dispose();
     });
     this.axesGroup.clear();
-    this.axesGroup = new THREE.Group();
+    this.axesGroup = new three.Group();
     this.axesGroup.name = 'hslCylinderAxes';
     const axisConfigs = [
-      { label: 'S', end: new THREE.Vector3(config.CYLINDER_SIZE, 0, 0), colorFunc: t => ColorModel.hslToRGB(color.h, t * 100, color.l) },
-      { label: 'L', end: new THREE.Vector3(0, config.CYLINDER_SIZE, 0), colorFunc: t => ColorModel.hslToRGB(color.h, color.s, t * 100) }
+      { label: 'S', end: new three.Vector3(config.CYLINDER_SIZE, 0, 0), colorFunc: t => ColorModel.hslToRGB(color.h, t * 100, color.l) },
+      { label: 'L', end: new three.Vector3(0, config.CYLINDER_SIZE, 0), colorFunc: t => ColorModel.hslToRGB(color.h, color.s, t * 100) }
     ];
     axisConfigs.forEach(({ label, end, colorFunc }, index) => {
-      const axis = ColorModel.createAxis(new THREE.Vector3(0, 0, 0), end, colorFunc);
+      const axis = ColorModel.createAxis(new three.Vector3(0, 0, 0), end, colorFunc);
       this.axesGroup.add(axis);
       const labelPos = end.clone().add(
-        new THREE.Vector3(index === 0 ? config.LABEL_DISTANCE : 0, index === 1 ? config.LABEL_DISTANCE : 0, 0)
+        new three.Vector3(index === 0 ? config.LABEL_DISTANCE : 0, index === 1 ? config.LABEL_DISTANCE : 0, 0)
       );
       const labelSprite = ColorModel.createLabel(label, labelPos, '#000000');
       this.axesGroup.add(labelSprite);
@@ -920,23 +922,23 @@ export class Cylinder extends ColorModel {
       if (child.material) child.material.dispose();
     });
     this.markerLinesGroup.clear();
-    this.markerLinesGroup = new THREE.Group();
+    this.markerLinesGroup = new three.Group();
     this.markerLinesGroup.name = 'hslCylinderMarkerLines';
 
     const lDistToFloor = Math.abs(this.marker.position.y - 0);
     const lDistToCeiling = Math.abs(this.marker.position.y - config.CYLINDER_SIZE);
     const lTargetY = lDistToFloor <= lDistToCeiling ? 0 : config.CYLINDER_SIZE;
     const lStart = this.marker.position.clone();
-    const lEnd = new THREE.Vector3(this.marker.position.x, lTargetY, this.marker.position.z);
+    const lEnd = new three.Vector3(this.marker.position.x, lTargetY, this.marker.position.z);
     if (lStart.distanceTo(lEnd) > 0.001) {
-      const geometry = new THREE.BufferGeometry().setFromPoints([lStart, lEnd]);
-      const material = new THREE.LineDashedMaterial({
+      const geometry = new three.BufferGeometry().setFromPoints([lStart, lEnd]);
+      const material = new three.LineDashedMaterial({
         color: 0x000000,
         linewidth: 1,
         dashSize: config.MARKER_LINE_DASH_SIZE,
         gapSize: config.MARKER_LINE_DASH_SIZE
       });
-      const line = new THREE.Line(geometry, material);
+      const line = new three.Line(geometry, material);
       line.computeLineDistances();
       this.markerLinesGroup.add(line);
     }
@@ -949,19 +951,19 @@ export class Cylinder extends ColorModel {
     const sStart = this.marker.position.clone();
     let sEnd;
     if (distToOrigin <= distToWall) {
-      sEnd = new THREE.Vector3(0, this.marker.position.y, 0);
+      sEnd = new three.Vector3(0, this.marker.position.y, 0);
     } else {
-      sEnd = new THREE.Vector3(wallX, this.marker.position.y, wallZ);
+      sEnd = new three.Vector3(wallX, this.marker.position.y, wallZ);
     }
     if (sStart.distanceTo(sEnd) > 0.001) {
-      const geometry = new THREE.BufferGeometry().setFromPoints([sStart, sEnd]);
-      const material = new THREE.LineDashedMaterial({
+      const geometry = new three.BufferGeometry().setFromPoints([sStart, sEnd]);
+      const material = new three.LineDashedMaterial({
         color: 0x000000,
         linewidth: 1,
         dashSize: config.MARKER_LINE_DASH_SIZE,
         gapSize: config.MARKER_LINE_DASH_SIZE
       });
-      const line = new THREE.Line(geometry, material);
+      const line = new three.Line(geometry, material);
       line.computeLineDistances();
       this.markerLinesGroup.add(line);
     }
@@ -985,7 +987,7 @@ export class Cylinder extends ColorModel {
     }
     if (!enabled) return;
 
-    this.plotGroups[groupKey] = new THREE.Group();
+    this.plotGroups[groupKey] = new three.Group();
     this.plotGroups[groupKey].name = `${type}PlotPoints`;
     const numSwatches = (100 / config.swatchCtrlStep) + 1;
     const rgb = ColorModel.hslToRGB(this.color.h, this.color.s, this.color.l);
@@ -997,9 +999,9 @@ export class Cylinder extends ColorModel {
         const rVal = (255 * normalizedVal) / 100;
         const hex = ColorModel.rgbToHex(Math.round(rVal), Math.round(g), Math.round(b));
         const hsl = ColorModel.hexToHSL(hex);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(rVal / 255, g / 255, b / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         const hRad = (parseFloat(hsl.h) * Math.PI * 2) / 360;
         const sScaled = parseFloat(hsl.s) * config.CYLINDER_SIZE / 100;
         point.position.set(
@@ -1015,9 +1017,9 @@ export class Cylinder extends ColorModel {
         const gVal = (255 * normalizedVal) / 100;
         const hex = ColorModel.rgbToHex(Math.round(r), Math.round(gVal), Math.round(b));
         const hsl = ColorModel.hexToHSL(hex);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(r / 255, gVal / 255, b / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         const hRad = (parseFloat(hsl.h) * Math.PI * 2) / 360;
         const sScaled = parseFloat(hsl.s) * config.CYLINDER_SIZE / 100;
         point.position.set(
@@ -1033,9 +1035,9 @@ export class Cylinder extends ColorModel {
         const bVal = (255 * normalizedVal) / 100;
         const hex = ColorModel.rgbToHex(Math.round(r), Math.round(g), Math.round(bVal));
         const hsl = ColorModel.hexToHSL(hex);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(r / 255, g / 255, bVal / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         const hRad = (parseFloat(hsl.h) * Math.PI * 2) / 360;
         const sScaled = parseFloat(hsl.s) * config.CYLINDER_SIZE / 100;
         point.position.set(
@@ -1050,9 +1052,9 @@ export class Cylinder extends ColorModel {
         const normalizedVal = i * config.swatchCtrlStep;
         const hVal = (359 * normalizedVal) / 100;
         const rgb = ColorModel.hslToRGB(hVal, this.color.s, this.color.l);
-        const material = new THREE.MeshBasicMaterial();
+        const material = new three.MeshBasicMaterial();
         material.color.setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
-        const point = new THREE.Mesh(this.plotPointGeometry, material);
+        const point = new three.Mesh(this.plotPointGeometry, material);
         const hRad = (hVal * Math.PI * 2) / 360;
         const sScaled = this.color.s * config.CYLINDER_SIZE / 100;
         const lScaled = this.color.l * config.CYLINDER_SIZE / 100;
