@@ -114,12 +114,12 @@ export class ModelManager {
       visibilityControls: null
     };
     this.swatchControlsElements = { rgb: null, hsl: null };
-    this.inputControlsElements = { rgb: null, hsl: null };
+    this.inputControlsElements = { rgb: null, hsl: null, 'rgb-hex': null };
     this.swatchCtrlLength = 475;
     this.swatchCtrlStep = 2;
     this.paletteManager = null;
   }
-  
+
   setPaletteManager(paletteManager) {
     this.paletteManager = paletteManager;
     if (paletteManager) {
@@ -193,12 +193,24 @@ export class ModelManager {
     };
   }
 
-  registerModel(id, model, width, height) {
-    model.modelManager = this;
-    const type = model.constructor.name; // Store class name (e.g., 'RGBCube', 'HSLCube', 'Cylinder')
-    this.models.set(id, { model, width, height, type });
+  static parseHexInput(value) {
+    // Parse 2-character hex (e.g., 'FF') to decimal (0–255)
+    const cleanValue = value.replace(/[^0-9A-Fa-f]/g, '').substring(0, 2).toUpperCase();
+    if (!cleanValue.match(/^[0-9A-Fa-f]{2}$/)) return 0;
+    return parseInt(cleanValue, 16);
   }
 
+  static toHex(value) {
+    // Convert decimal (0–255) to 2-character hex (e.g., 'FF')
+    const hex = Math.round(value).toString(16).toUpperCase();
+    return hex.length === 1 ? '0' + hex : hex;
+  }
+
+  registerModel(id, model, width, height) {
+    model.modelManager = this;
+    const type = model.constructor.name;
+    this.models.set(id, { model, width, height, type });
+  }
 
   update() {
     this.models.forEach(({ model, type }) => {
@@ -224,16 +236,27 @@ export class ModelManager {
   }
 
   updateFromInput(mode) {
+    const parseInput = (value, max) => {
+      const num = parseFloat(value);
+      return isNaN(num) ? 0 : Math.max(0, Math.min(max, num));
+    };
+
     const values = {
-      r: ModelManager.parseInput(this.inputControlsElements.rgb?.querySelector('.input-r')?.value || this.state.rgb.r, 255),
-      g: ModelManager.parseInput(this.inputControlsElements.rgb?.querySelector('.input-g')?.value || this.state.rgb.g, 255),
-      b: ModelManager.parseInput(this.inputControlsElements.rgb?.querySelector('.input-b')?.value || this.state.rgb.b, 255),
-      h: ModelManager.parseInput(this.inputControlsElements.hsl?.querySelector('.input-h')?.value || this.state.hsl.h, 359),
-      s: ModelManager.parseInput(this.inputControlsElements.hsl?.querySelector('.input-s')?.value || this.state.hsl.s, 100),
-      l: ModelManager.parseInput(this.inputControlsElements.hsl?.querySelector('.input-l')?.value || this.state.hsl.l, 100)
+      r: mode === 'rgb-hex' ? 
+        ModelManager.parseHexInput(this.inputControlsElements['rgb-hex']?.querySelector('.input-r')?.value || ModelManager.toHex(this.state.rgb.r)) :
+        parseInput(this.inputControlsElements.rgb?.querySelector('.input-r')?.value || this.state.rgb.r, 255),
+      g: mode === 'rgb-hex' ? 
+        ModelManager.parseHexInput(this.inputControlsElements['rgb-hex']?.querySelector('.input-g')?.value || ModelManager.toHex(this.state.rgb.g)) :
+        parseInput(this.inputControlsElements.rgb?.querySelector('.input-g')?.value || this.state.rgb.g, 255),
+      b: mode === 'rgb-hex' ? 
+        ModelManager.parseHexInput(this.inputControlsElements['rgb-hex']?.querySelector('.input-b')?.value || ModelManager.toHex(this.state.rgb.b)) :
+        parseInput(this.inputControlsElements.rgb?.querySelector('.input-b')?.value || this.state.rgb.b, 255),
+      h: parseInput(this.inputControlsElements.hsl?.querySelector('.input-h')?.value || this.state.hsl.h, 359),
+      s: parseInput(this.inputControlsElements.hsl?.querySelector('.input-s')?.value || this.state.hsl.s, 100),
+      l: parseInput(this.inputControlsElements.hsl?.querySelector('.input-l')?.value || this.state.hsl.l, 100)
     };
     let hex;
-    if (mode === 'rgb') {
+    if (mode === 'rgb' || mode === 'rgb-hex') {
       this.state.rgb = { r: values.r, g: values.g, b: values.b };
       hex = ModelManager.rgbToHex(values.r, values.g, values.b);
       this.state.hsl = ModelManager.hexToHSL(hex);
@@ -249,6 +272,11 @@ export class ModelManager {
       this.inputControlsElements.rgb.querySelector('.input-r').value = this.state.rgb.r;
       this.inputControlsElements.rgb.querySelector('.input-g').value = this.state.rgb.g;
       this.inputControlsElements.rgb.querySelector('.input-b').value = this.state.rgb.b;
+    }
+    if (this.inputControlsElements['rgb-hex']) {
+      this.inputControlsElements['rgb-hex'].querySelector('.input-r').value = ModelManager.toHex(this.state.rgb.r);
+      this.inputControlsElements['rgb-hex'].querySelector('.input-g').value = ModelManager.toHex(this.state.rgb.g);
+      this.inputControlsElements['rgb-hex'].querySelector('.input-b').value = ModelManager.toHex(this.state.rgb.b);
     }
     if (this.inputControlsElements.hsl) {
       this.inputControlsElements.hsl.querySelector('.input-h').value = Math.round(this.state.hsl.h);
