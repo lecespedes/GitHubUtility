@@ -222,7 +222,32 @@
     .symbols{
       font-family: 'Segoe UI Symbol', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-
+.header-tabs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-grow: 1;
+}
+.header-tab {
+  padding: 8px 16px;
+  cursor: pointer;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  background: #eee;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+.header-tab.active {
+  background: #ddd;
+  font-weight: bold;
+  border-color: #666;
+}
+.section {
+  display: none;
+}
+.section.active {
+  display: block;
+}
     @media (max-width: 800px) {
       .canvas-container {
         flex-direction: column;
