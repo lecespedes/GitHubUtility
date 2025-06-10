@@ -318,10 +318,18 @@ export class ModelManager {
   inputControls(type, element) {
     element.innerHTML = '';
     this.inputControlsElements[type] = element;
-    const components = type === 'rgb' ? ['r', 'g', 'b'] : ['h', 's', 'l'];
-    const labels = type === 'rgb' ? ['Red', 'Green', 'Blue'] : ['Hue', 'Saturation', 'Lightness'];
-    const maxValues = type === 'rgb' ? [255, 255, 255] : [359, 100, 100];
-    const ranges = type === 'rgb' ? ['(0–255)', '(0–255)', '(0–255)'] : ['(0–359°)', '(0–100%)', '(0–100%)'];
+    let components, labels, maxValues, ranges;
+    if (type === 'rgb' || type === 'rgb-hex') {
+      components = ['r', 'g', 'b'];
+      labels = ['Red', 'Green', 'Blue'];
+      maxValues = [255, 255, 255];
+      ranges = type === 'rgb' ? ['(0–255)', '(0–255)', '(0–255)'] : ['(00–FF)', '(00–FF)', '(00–FF)'];
+    } else {
+      components = ['h', 's', 'l'];
+      labels = ['Hue', 'Saturation', 'Lightness'];
+      maxValues = [359, 100, 100];
+      ranges = ['(0–359°)', '(0–100%)', '(0–100%)'];
+    }
 
     components.forEach((comp, index) => {
       const group = document.createElement('div');
@@ -329,11 +337,18 @@ export class ModelManager {
       const label = document.createElement('label');
       label.textContent = labels[index];
       const input = document.createElement('input');
-      input.type = 'number';
       input.className = `input-${comp}`;
-      input.min = '0';
-      input.max = maxValues[index];
-      input.value = type === 'rgb' ? this.state.rgb[comp] : this.state.hsl[comp];
+      if (type === 'rgb-hex') {
+        input.type = 'text';
+        input.pattern = '[0-9A-Fa-f]{2}';
+        input.maxLength = 2;
+        input.value = ModelManager.toHex(this.state.rgb[comp]);
+      } else {
+        input.type = 'number';
+        input.min = '0';
+        input.max = maxValues[index];
+        input.value = type === 'rgb' ? this.state.rgb[comp] : this.state.hsl[comp];
+      }
       input.addEventListener('input', () => this.updateFromInput(type));
       const range = document.createTextNode(ranges[index]);
       group.appendChild(label);
