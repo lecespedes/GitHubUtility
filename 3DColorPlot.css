@@ -24,7 +24,26 @@
       background-color: darkgray;
       margin-bottom: 10px;
     }
-
+    .header-tabs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-grow: 1;
+    } 
+    .header-tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background: #eee;
+      font-size: 1rem;
+      transition: background-color 0.2s;
+    }
+    .header-tab.active {
+      background: #ddd;
+      font-weight: bold;
+      border-color: #666;
+    }
     .container {
       max-width: 1200px;
       margin: 0 auto;
@@ -32,7 +51,12 @@
       flex-direction: column;
       gap: 10px;
     }
-
+    .section {
+      display: none;
+    }
+    .section.active {
+      display: block;
+    }
     .canvas-container {
       display: flex;
       gap: 1rem;
@@ -50,7 +74,24 @@
       align-items: center;
       justify-content: center;
     }
-
+    .controls-row {
+      display: flex;
+      align-items: center;
+      margin-left: 5px;
+    }
+    .tab {
+      padding: 5px 16px;
+      background: #fff;
+      border: 2px outset #ddd;
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .tab.active {
+      background: #ccc;
+      font-weight: bold;
+      border-bottom: none;
+    }
     .toggle-switch {
       display: flex;
       align-items: center;
@@ -101,6 +142,12 @@
       height: 400px;
       display: block;
       box-sizing: content-box;
+    }
+    .hsl-canvas-div {
+      display: none;
+    }
+    .hsl-canvas-div.active {
+      display: block;
     }
 
     .axis-swatches {
@@ -168,8 +215,9 @@
       font-weight: bold;
     }
 
-    .input-group input {
-      width: 100px;
+    .input-group input[type="text"],
+    .input-group input[type="file"] {
+      width: 200px;
       padding: 0.5rem;
       border: 1px solid #aaa;
       border-radius: 4px;
@@ -186,98 +234,34 @@
       align-items: center;
       justify-content: center;
     }
-
     #colorSwatch .hex-text {
       font-size: 0.8rem;
     }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      margin-top: 20px;
+    }
 
-    .tab {
-      padding: 5px 16px;
-      background: #fff;
-      border: 2px outset #ddd;
-      border-radius: 4px 4px 0 0;
+    .controls button {
+      padding: 0.5rem 1rem;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background: #eee;
       cursor: pointer;
       font-size: 0.9rem;
     }
 
-    .tab.active {
-      background: #ccc;
-      font-weight: bold;
-      border-bottom: none;
+    .controls button:hover {
+      background: #ddd;
     }
-
-    .hsl-canvas-div {
-      display: none;
-    }
-
-    .hsl-canvas-div.active {
-      display: block;
-    }
-
-    .controls-row {
-      display: flex;
-      align-items: center;
-      margin-left: 5px;
+   .error {
+      color: red;
+      font-size: 0.9rem;
     }
     .symbols{
       font-family: 'Segoe UI Symbol', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-.header-tabs {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-grow: 1;
-} 
-.header-tab {
-  padding: 8px 16px;
-  cursor: pointer;
-  border: 1px solid #aaa;
-  border-radius: 4px;
-  background: #eee;
-  font-size: 1rem;
-  transition: background-color 0.2s;
-}
-.header-tab.active {
-  background: #ddd;
-  font-weight: bold;
-  border-color: #666;
-}
-.section {
-  display: none;
-}
-.section.active {
-  display: block;
-}
-    @media (max-width: 800px) {
-      .canvas-container {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .canvas-wrapper {
-        max-width: 100%;
-      }
-
-      canvas {
-        box-sizing: border-box;
-        height: 300px;
-      }
-
-      .input-group input {
-        width: 80px;
-      }
-
-      .axis-swatches {
-        align-items: center;
-      }
-
-      .axis-swatch-group {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .swatch-line {
-        max-width: 100%;
-        flex-wrap: wrap;
-      }
-    }
+    
