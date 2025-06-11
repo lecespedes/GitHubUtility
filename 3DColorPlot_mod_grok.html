@@ -20,15 +20,15 @@
 </head>
 <body>
   <header>
-    <div class="header-container" style="display: flex;width: 1200px;align-items: end;">
+    <div class="header-container" style="display: flex;width: 1200px;align-items: end;justify-content: space-between;gap: 10px;">
         <div class="header-title" style="padding: 10px 0;">
             <h1>3D Color Visualizer with Palette</h1>
         </div>
-        <div class="header-tabs">
-        <div class="header-tab active" id="tab-models">Models</div>
-        <div class="header-tab" id="tab-palette">Palette</div>
-        </div>
         <div id="colorSwatch"><span class="hex-text"></span></div> 
+        <div class="header-tabs">
+            <div class="header-tab active" id="tab-models">Models</div>
+            <div class="header-tab" id="tab-palette">Palette</div>
+        </div>
     </div>
   </header>
   <div class="container" id="container">
@@ -39,20 +39,22 @@
         <div class="canvas-wrapper">
           <div class="canvas-title">
             <h2>RGB</h2>
-            <div class="toggle-switch">
-              <input type="checkbox" id="hPlotToggle">
-              <label for="hPlotToggle"></label>
-              HPlot
-            </div>
-            <div class="toggle-switch">
-              <input type="checkbox" id="sPlotToggle">
-              <label for="sPlotToggle"></label>
-              SPlot
-            </div>
-            <div class="toggle-switch">
-              <input type="checkbox" id="lPlotToggle">
-              <label for="lPlotToggle"></label>
-              LPlot
+            <div class="controls-row">
+                <div class="toggle-switch">
+                <input type="checkbox" id="hPlotToggle">
+                <label for="hPlotToggle"></label>
+                HPlot
+                </div>
+                <div class="toggle-switch">
+                <input type="checkbox" id="sPlotToggle">
+                <label for="sPlotToggle"></label>
+                SPlot
+                </div>
+                <div class="toggle-switch">
+                <input type="checkbox" id="lPlotToggle">
+                <label for="lPlotToggle"></label>
+                LPlot
+                </div>
             </div>
           </div>
           <canvas id="rgbCanvas"></canvas>
@@ -111,88 +113,6 @@
     //import { RGBCube, HSLCube, Cylinder  } from 'https://cdn.jsdelivr.net/gh/lecespedes/GitHubUtility@main/ColorModels.js?v=1.0';
     import { PaletteManager } from './PaletteManager.js';
     //import { PaletteManager } from 'https://cdn.jsdelivr.net/gh/lecespedes/GitHubUtility@main/PaletteManager.js?v=1.0';
-
-    // Color parsing functions
-    function parseHexColor(str) {
-      const hexRegex = /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{8})\b/g;
-      return (str.match(hexRegex) || []).map(hex => {
-        // Normalize 3/4-digit hex to 6/8-digit
-        if (hex.length === 4 || hex.length === 5) {
-          hex = '#' + hex.slice(1).split('').map(c => c + c).join('');
-        }
-        return hex.toLowerCase();
-      });
-    }
-
-    function parseRGBColor(str) {
-      const rgbRegex = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+))?\s*\)/g;
-      const matches = [];
-      let match;
-      while ((match = rgbRegex.exec(str)) !== null) {
-        const [, r, g, b] = match;
-        matches.push({ r: parseInt(r), g: parseInt(g), b: parseInt(b) });
-      }
-      return matches;
-    }
-
-    function parseHSLColor(str) {
-      const hslRegex = /hsla?\(\s*(\d{1,3})\s*,\s*(\d{1,3})%\s*,\s*(\d{1,3})%\s*(?:,\s*([\d.]+))?\s*\)/g;
-      const matches = [];
-      let match;
-      while ((match = hslRegex.exec(str)) !== null) {
-        const [, h, s, l] = match;
-        matches.push({ h: parseInt(h), s: parseInt(s), l: parseInt(l) });
-      }
-      return matches;
-    }
-
-    function rgbToHSL(rgb) {
-      return ModelManager.hexToHSL(ModelManager.rgbToHex(rgb.r, rgb.g, rgb.b));
-    }
-
-    function extractColors(content) {
-      const colors = [];
-      let index = 1;
-
-      // Extract Hex colors
-      parseHexColor(content).forEach(hex => {
-        colors.push({
-          code: `color${index++}`,
-          hex,
-          hsl: ModelManager.hexToHSL(hex)
-        });
-      });
-
-      // Extract RGB colors
-      parseRGBColor(content).forEach(rgb => {
-        colors.push({
-          code: `color${index++}`,
-          hex: ModelManager.rgbToHex(rgb.r, rgb.g, rgb.b),
-          hsl: rgbToHSL(rgb)
-        });
-      });
-
-      // Extract HSL colors
-      parseHSLColor(content).forEach(hsl => {
-        colors.push({
-          code: `color${index++}`,
-          hex: ModelManager.rgbToHex(...Object.values(ModelManager.hslToRGB(hsl.h, hsl.s, hsl.l))),
-          hsl
-        });
-      });
-
-      // Remove duplicates based on hex
-      const uniqueColors = [];
-      const seenHex = new Set();
-      colors.forEach(color => {
-        if (!seenHex.has(color.hex)) {
-          seenHex.add(color.hex);
-          uniqueColors.push(color);
-        }
-      });
-
-      return uniqueColors;
-    }
 
     document.addEventListener('DOMContentLoaded', () => {
       const dom = {
@@ -295,66 +215,6 @@
         hslCylinder.setPlotSetting('b', dom.bPlotToggle.checked);
       });
 
-      /* Import data event
-      dom.importData.addEventListener('click', async () => {
-        dom.error.textContent = '';
-        let content = '';
-
-        // Handle URL import
-        if (dom.importUrl.value.trim()) {
-          try {
-            const response = await fetch(dom.importUrl.value);
-            if (!response.ok) throw new Error('Failed to fetch file');
-            content = await response.text();
-          } catch (error) {
-            dom.error.textContent = `Import error: ${error.message}`;
-            return;
-          }
-        }
-        // Handle file import
-        else if (dom.fileInput.files.length > 0) {
-          try {
-            const file = dom.fileInput.files[0];
-            content = await new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = () => reject(new Error('Failed to read file'));
-              reader.readAsText(file);
-            });
-          } catch (error) {
-            dom.error.textContent = `Import error: ${error.message}`;
-            return;
-          }
-        } else {
-          dom.error.textContent = 'Please provide a URL or select a file';
-          return;
-        }
-
-        // Extract colors
-        const data = extractColors(content);
-        if (data.length === 0) {
-          dom.error.textContent = 'No valid colors found in the file';
-          return;
-        }
-
-        // Plot colors
-        try {
-          hslCylinder.plotHSLData(data);
-          dom.error.textContent = '';
-        } catch (error) {
-          dom.error.textContent = `Plotting error: ${error.message}`;
-        }
-      });
-
-      // Clear data event
-      dom.clearData.addEventListener('click', () => {
-        hslCylinder.clearImportedData();
-        dom.error.textContent = '';
-        dom.importUrl.value = '';
-        dom.fileInput.value = '';
-      });
-*/
-      // Start animation
       modelManager.animate();
     });
   </script>
