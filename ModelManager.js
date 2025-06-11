@@ -76,6 +76,243 @@ export function normRadians(radians) {
   return parseFloat(((radians % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI));
 }
 
+const ELEMENTS = {
+  controls: {
+    type: "div",
+    className: "",
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "10px",
+      alignItems: "center",
+      marginTop: "20px",
+    },
+  },
+  urlGroup: {
+    type: "div",
+    className: "",
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      textAlign: "center",
+    },
+  },
+  urlLabel: {
+    type: "label",
+    className: "",
+    textContent: "Import URL",
+    style: {
+      fontSize: "0.9rem",
+      fontWeight: "bold",
+      color: "#333",
+    },
+  },
+  urlInput: {
+    type: "input",
+    id: "import-url",
+    className: "",
+    typeAttr: "text",
+    placeholder: "Enter URL (e.g., JSON, HTML, CSS)",
+    style: {
+      width: "200px",
+      padding: "0.5rem",
+      border: "1px solid #aaa",
+      borderRadius: "4px",
+      fontSize: "0.9rem",
+      backgroundColor: "#fff",
+    },
+  },
+  fileGroup: {
+    type: "div",
+    className: "",
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      textAlign: "center",
+    },
+  },
+  fileLabel: {
+    type: "label",
+    className: "",
+    textContent: "Import File",
+    style: {
+      fontSize: "0.9rem",
+      fontWeight: "bold",
+      color: "#333",
+    },
+  },
+  fileInput: {
+    type: "input",
+    id: "file-input",
+    className: "",
+    typeAttr: "file",
+    accept: "*/*",
+    style: {
+      width: "200px",
+      padding: "0.5rem",
+      border: "1px solid #aaa",
+      borderRadius: "4px",
+      fontSize: "0.9rem",
+      backgroundColor: "#fff",
+    },
+  },
+  buttonGroup: {
+    type: "div",
+    className: "",
+    style: {
+      display: "flex",
+      gap: "10px",
+    },
+  },
+  importButton: {
+    type: "button",
+    id: "import-data",
+    className: "",
+    textContent: "Import Colors",
+    style: {
+      padding: "0.5rem 1rem",
+      border: "1px solid #aaa",
+      borderRadius: "4px",
+      background: "#eee",
+      cursor: "pointer",
+      fontSize: "0.9rem",
+      color: "#333",
+    },
+  },
+  clearButton: {
+    type: "button",
+    id: "clear-data",
+    className: "",
+    textContent: "Clear Data",
+    style: {
+      padding: "0.5rem 1rem",
+      border: "1px solid #aaa",
+      borderRadius: "4px",
+      background: "#eee",
+      cursor: "pointer",
+      fontSize: "0.9rem",
+      color: "#333",
+    },
+  },
+  error: {
+    type: "div",
+    id: "error",
+    className: "",
+    style: {
+      color: "red",
+      fontSize: "0.9rem",
+    },
+  },
+  inputContainer: {
+    type: "div",
+    className: "",
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "1rem",
+      justifyContent: "center",
+    },
+  },
+  inputGroup: {
+    type: "div",
+    className: "input-group",
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      textAlign: "center",
+    },
+  },
+  inputLabel: {
+    type: "label",
+    className: "",
+    style: {
+      fontSize: "0.9rem",
+      fontWeight: "bold",
+      color: "#333",
+    },
+  },
+  input: {
+    type: "input",
+    className: "",
+    style: {
+      padding: "0.5rem",
+      border: "1px solid #aaa",
+      borderRadius: "4px",
+      fontSize: "0.9rem",
+      backgroundColor: "#fff",
+      width: "100px",
+    },
+  },
+  swatches: {
+    type: "div",
+    className: "swatches",
+    style: {
+      marginTop: "0.5rem",
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
+  },
+  axisSwatchGroup: {
+    type: "div",
+    className: "axis-swatch-group",
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      position: "relative",
+    },
+  },
+  swatchGroupLabel: {
+    type: "label",
+    className: "",
+    style: {
+      fontSize: "0.9rem",
+      fontWeight: "bold",
+      width: "20px",
+      color: "#333",
+    },
+  },
+  swatchLine: {
+    type: "div",
+    className: "",
+    style: {
+      display: "flex",
+    },
+  },
+  swatch: {
+    type: "div",
+    className: "swatch",
+    style: {
+      height: "1rem",
+      cursor: "pointer",
+      borderRight: "1px solid #f5f5f5",
+      position: "relative",
+    },
+  },
+  caret: {
+    type: "div",
+    className: "caret",
+    style: {
+      position: "absolute",
+      top: "1rem",
+      left: "50%",
+      borderLeft: "5px solid transparent",
+      borderRight: "5px solid transparent",
+      borderBottom: "5px solid #333",
+      transform: "translateX(-50%)",
+      display: "none",
+    },
+  },
+  hexText: {
+    type: "span",
+    className: "hex-text",
+    style: {
+      fontSize: "0.9rem",
+    },
+  },
+};
+
 export class ModelManager {
   constructor() {
     this.models = new Map();
@@ -111,13 +348,131 @@ export class ModelManager {
       lightnessSpreadInput: null,
       layoutToggle: null,
       saturationControls: null,
-      visibilityControls: null
+      visibilityControls: null,
+      importUrl: null,
+      fileInput: null,
+      error: null
     };
     this.swatchControlsElements = { rgb: null, hsl: null };
     this.inputControlsElements = { rgb: null, hsl: null, 'rgb-hex': null };
     this.swatchCtrlLength = 475;
     this.swatchCtrlStep = 2;
     this.paletteManager = null;
+  }
+
+  createElement(configName, overrides = {}) {
+    const config = ELEMENTS[configName];
+    if (!config) throw new Error(`Element config ${configName} not found`);
+
+    const element = document.createElement(config.type);
+    
+    // Apply static properties
+    if (config.className) element.className = config.className;
+    if (config.id) element.id = config.id;
+    if (config.textContent) element.textContent = config.textContent;
+    if (config.typeAttr) element.type = config.typeAttr;
+    if (config.placeholder) element.placeholder = config.placeholder;
+    if (config.accept) element.accept = config.accept;
+
+    // Apply styles
+    Object.assign(element.style, config.style);
+
+    // Apply overrides
+    if (overrides.className) element.className += ` ${overrides.className}`;
+    if (overrides.id) element.id = overrides.id;
+    if (overrides.textContent) element.textContent = overrides.textContent;
+    if (overrides.typeAttr) element.type = overrides.typeAttr;
+    if (overrides.placeholder) element.placeholder = overrides.placeholder;
+    if (overrides.accept) element.accept = overrides.accept;
+    if (overrides.style) Object.assign(element.style, overrides.style);
+
+    // Add hover effects for buttons
+    if (configName === 'importButton' || configName === 'clearButton') {
+      element.addEventListener('mouseover', () => {
+        element.style.background = '#ddd';
+      });
+      element.addEventListener('mouseout', () => {
+        element.style.background = '#eee';
+      });
+    }
+
+    return element;
+  }
+
+  static parseHexColor(str) {
+    const hexRegex = /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{8})\b/g;
+    return (str.match(hexRegex) || []).map(hex => {
+      if (hex.length === 4 || hex.length === 5) {
+        hex = '#' + hex.slice(1).split('').map(c => c + c).join('');
+      }
+      return hex.toLowerCase();
+    });
+  }
+
+  static parseRGBColor(str) {
+    const rgbRegex = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+))?\s*\)/g;
+    const matches = [];
+    let match;
+    while ((match = rgbRegex.exec(str)) !== null) {
+      const [, r, g, b] = match;
+      matches.push({ r: parseInt(r), g: parseInt(g), b: parseInt(b) });
+    }
+    return matches;
+  }
+
+  static parseHSLColor(str) {
+    const hslRegex = /hsla?\(\s*(\d{1,3})\s*,\s*(\d{1,3})%\s*,\s*(\d{1,3})%\s*(?:,\s*([\d.]+))?\s*\)/g;
+    const matches = [];
+    let match;
+    while ((match = hslRegex.exec(str)) !== null) {
+      const [, h, s, l] = match;
+      matches.push({ h: parseInt(h), s: parseInt(s), l: parseInt(l) });
+    }
+    return matches;
+  }
+
+  static rgbToHSL(rgb) {
+    return ModelManager.hexToHSL(ModelManager.rgbToHex(rgb.r, rgb.g, rgb.b));
+  }
+
+  static extractColors(content) {
+    const colors = [];
+    let index = 1;
+
+    ModelManager.parseHexColor(content).forEach(hex => {
+      colors.push({
+        code: `color${index++}`,
+        hex,
+        hsl: ModelManager.hexToHSL(hex)
+      });
+    });
+
+    ModelManager.parseRGBColor(content).forEach(rgb => {
+      colors.push({
+        code: `color${index++}`,
+        hex: ModelManager.rgbToHex(rgb.r, rgb.g, rgb.b),
+        hsl: ModelManager.rgbToHSL(rgb)
+      });
+    });
+
+    ModelManager.parseHSLColor(content).forEach(hsl => {
+      colors.push({
+        code: `color${index++}`,
+        hex: ModelManager.rgbToHex(...Object.values(ModelManager.hslToRGB(hsl.h, hsl.s, hsl.l))),
+        hsl
+      });
+    });
+
+    const uniqueColors = [];
+    const seenHex = new Set();
+    colors.forEach(color => {
+      if (!seenHex.has(color.hex)) {
+        seenHex.add(color.hex);
+        uniqueColors.push(color);
+      }
+    });
+
+    return uniqueColors;
   }
 
   setPaletteManager(paletteManager) {
@@ -194,14 +549,12 @@ export class ModelManager {
   }
 
   static parseHexInput(value) {
-    // Parse 2-character hex (e.g., 'FF') to decimal (0–255)
     const cleanValue = value.replace(/[^0-9A-Fa-f]/g, '').substring(0, 2).toUpperCase();
     if (!cleanValue.match(/^[0-9A-Fa-f]{2}$/)) return 0;
     return parseInt(cleanValue, 16);
   }
 
   static toHex(value) {
-    // Convert decimal (0–255) to 2-character hex (e.g., 'FF')
     const hex = Math.round(value).toString(16).toUpperCase();
     return hex.length === 1 ? '0' + hex : hex;
   }
@@ -233,6 +586,96 @@ export class ModelManager {
     } catch (e) {
       console.error("Rendering failed:", e.message);
     }
+  }
+
+  createImportControls(containerElement) {
+    containerElement.innerHTML = '';
+    
+    const controls = this.createElement('controls');
+    const urlGroup = this.createElement('urlGroup');
+    const urlLabel = this.createElement('urlLabel');
+    const urlInput = this.createElement('urlInput');
+    urlGroup.appendChild(urlLabel);
+    urlGroup.appendChild(urlInput);
+    controls.appendChild(urlGroup);
+
+    const fileGroup = this.createElement('fileGroup');
+    const fileLabel = this.createElement('fileLabel');
+    const fileInput = this.createElement('fileInput');
+    fileGroup.appendChild(fileLabel);
+    fileGroup.appendChild(fileInput);
+    controls.appendChild(fileGroup);
+
+    const buttonGroup = this.createElement('buttonGroup');
+    const importButton = this.createElement('importButton');
+    const clearButton = this.createElement('clearButton');
+    buttonGroup.appendChild(importButton);
+    buttonGroup.appendChild(clearButton);
+    controls.appendChild(buttonGroup);
+
+    const error = this.createElement('error');
+    controls.appendChild(error);
+
+    containerElement.appendChild(controls);
+
+    this.dom.importUrl = urlInput;
+    this.dom.fileInput = fileInput;
+    this.dom.error = error;
+
+    importButton.addEventListener('click', async () => {
+      this.dom.error.textContent = '';
+      let content = '';
+
+      if (this.dom.importUrl.value.trim()) {
+        try {
+          const response = await fetch(this.dom.importUrl.value);
+          if (!response.ok) throw new Error('Failed to fetch file');
+          content = await response.text();
+        } catch (error) {
+          this.dom.error.textContent = `Import error: ${error.message}`;
+          return;
+        }
+      } else if (this.dom.fileInput.files.length > 0) {
+        try {
+          const file = this.dom.fileInput.files[0];
+          content = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+          });
+        } catch (error) {
+          this.dom.error.textContent = `Import error: ${error.message}`;
+          return;
+        }
+      } else {
+        this.dom.error.textContent = 'Please provide a URL or select a file';
+        return;
+      }
+
+      const data = ModelManager.extractColors(content);
+      if (data.length === 0) {
+        this.dom.error.textContent = 'No valid colors found in the file';
+        return;
+      }
+
+      try {
+        const hslCylinder = this.models.get('hslCylinder')?.model;
+        if (!hslCylinder) throw new Error('HSL Cylinder model not found');
+        hslCylinder.plotHSLData(data);
+        this.dom.error.textContent = '';
+      } catch (error) {
+        this.dom.error.textContent = `Plotting error: ${error.message}`;
+      }
+    });
+
+    clearButton.addEventListener('click', () => {
+      const hslCylinder = this.models.get('hslCylinder')?.model;
+      if (hslCylinder) hslCylinder.clearImportedData();
+      this.dom.error.textContent = '';
+      this.dom.importUrl.value = '';
+      this.dom.fileInput.value = '';
+    });
   }
 
   updateFromInput(mode) {
@@ -309,27 +752,29 @@ export class ModelManager {
   swatchControls(type, element) {
     element.innerHTML = '';
     this.swatchControlsElements[type] = element;
+    
+    const swatches = this.createElement('swatches');
+    element.appendChild(swatches);
+    
     const components = type === 'rgb' ? ['r', 'g', 'b'] : ['h', 's', 'l'];
     const scales = type === 'rgb' ? [255, 255, 255] : [359, 100, 100];
     const labels = type === 'rgb' ? ['R', 'G', 'B'] : ['H', 'S', 'L'];
 
     components.forEach((comp, index) => {
-      const group = document.createElement('div');
-      group.className = 'axis-swatch-group';
-      const label = document.createElement('label');
+      const group = this.createElement('axisSwatchGroup');
+      const label = this.createElement('swatchGroupLabel');
       label.textContent = labels[index];
-      const swatchLine = document.createElement('div');
-      swatchLine.className = `swatch-line swatch-${comp}`;
+      const swatchLine = this.createElement('swatchLine', { className: `swatch-${comp}` });
       swatchLine.style.width = `${this.swatchCtrlLength}px`;
       group.appendChild(label);
       group.appendChild(swatchLine);
-      element.appendChild(group);
+      swatches.appendChild(group);
     });
 
     this.updateSwatches();
 
     components.forEach(comp => {
-      const swatchLine = element.querySelector(`.swatch-${comp}`);
+      const swatchLine = swatches.querySelector(`.swatch-${comp}`);
       swatchLine.addEventListener('click', event => {
         if (event.target.classList.contains('swatch')) {
           const value = event.target.dataset[comp];
@@ -346,6 +791,10 @@ export class ModelManager {
   inputControls(type, element) {
     element.innerHTML = '';
     this.inputControlsElements[type] = element;
+    
+    const container = this.createElement('inputContainer');
+    element.appendChild(container);
+
     let components, labels, maxValues, ranges;
     if (type === 'rgb' || type === 'rgb-hex') {
       components = ['r', 'g', 'b'];
@@ -360,12 +809,10 @@ export class ModelManager {
     }
 
     components.forEach((comp, index) => {
-      const group = document.createElement('div');
-      group.className = 'input-group';
-      const label = document.createElement('label');
+      const group = this.createElement('inputGroup');
+      const label = this.createElement('inputLabel');
       label.textContent = labels[index];
-      const input = document.createElement('input');
-      input.className = `input-${comp}`;
+      const input = this.createElement('input', { className: `input-${comp}` });
       if (type === 'rgb-hex') {
         input.type = 'text';
         input.pattern = '[0-9A-Fa-f]{2}';
@@ -382,12 +829,16 @@ export class ModelManager {
       group.appendChild(label);
       group.appendChild(input);
       group.appendChild(range);
-      element.appendChild(group);
+      container.appendChild(group);
     });
   }
 
   currentSwatch(element) {
     this.dom.colorSwatch = element;
+    const hexText = element.querySelector('.hex-text');
+    if (hexText) {
+      Object.assign(hexText.style, ELEMENTS.hexText.style);
+    }
     this.updateFromInput('rgb');
   }
 
@@ -423,14 +874,12 @@ export class ModelManager {
             ? colorValues
             : ModelManager.hslToRGB(colorValues.h, colorValues.s, colorValues.l);
           const hex = ModelManager.rgbToHex(Math.round(rgb.r), Math.round(rgb.g), Math.round(rgb.b));
-          const swatch = document.createElement('div');
-          swatch.className = 'swatch';
+          const swatch = this.createElement('swatch');
           swatch.style.backgroundColor = hex;
           swatch.style.width = `${swatchWidth}px`;
           swatch.title = Math.round(val);
           swatch.dataset[comp] = Math.round(val);
-          const caret = document.createElement('div');
-          caret.className = 'caret';
+          const caret = this.createElement('caret');
           swatch.appendChild(caret);
           swatchLine.appendChild(swatch);
         }

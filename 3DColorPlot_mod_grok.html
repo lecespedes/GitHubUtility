@@ -7,7 +7,7 @@
   <!-- CDN CSS Imports -->
   <link rel="stylesheet" href="3DColorPlot.css">
   <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lecespedes/GitHubUtility@main/3DColorPlot.css">-->
-  <link rel="stylesheet" href="PaletteManager.css">-->
+  <link rel="stylesheet" href="PaletteManager.css">
   <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lecespedes/GitHubUtility@main/PaletteManager.css">-->
   <script type="importmap">
     {
@@ -58,6 +58,7 @@
           <canvas id="rgbCanvas"></canvas>
           <div id="rgb-swatches" class="swatches"></div>
           <div id="rgb-inputs" class="input-container"></div>
+          <div id="rgb-hex-inputs" class="input-container"></div>
         </div>
         <!-- HSL Section (Cylinder Primary, Cube Secondary) -->
         <div class="canvas-wrapper">
@@ -93,19 +94,7 @@
           <div id="hsl-inputs" class="input-container"></div>
         </div>
       </div>
-      <div class="controls">
-        <div class="input-group">
-          <label for="import-url">Import URL</label>
-          <input type="text" id="import-url" placeholder="Enter URL (e.g., JSON, HTML, CSS)">
-        </div>
-        <div class="input-group">
-          <label for="file-input">Import File</label>
-          <input type="file" id="file-input" accept="*/*">
-        </div>
-        <button id="import-data">Import Colors</button>
-        <button id="clear-data">Clear Data</button>
-        <div id="error" class="error"></div>
-      </div>
+      <div id="import-controls"></div>
     </div>
     <!-- Palette Section -->
     <div id="palette-section" class="section">
@@ -224,12 +213,9 @@
         rgbSwatches: document.getElementById('rgb-swatches'),
         hslSwatches: document.getElementById('hsl-swatches'),
         rgbInputs: document.getElementById('rgb-inputs'),
+        rgbHexInputs: document.getElementById('rgb-hex-inputs'),
         hslInputs: document.getElementById('hsl-inputs'),
-        importData: document.getElementById('import-data'),
-        clearData: document.getElementById('clear-data'),
-        importUrl: document.getElementById('import-url'),
-        fileInput: document.getElementById('file-input'),
-        error: document.getElementById('error'),
+        importControls: document.getElementById('import-controls'),
         paletteContainer: document.getElementById('palette-container'),
         tabModels: document.getElementById('tab-models'),
         tabPalette: document.getElementById('tab-palette'),
@@ -258,7 +244,9 @@
       modelManager.swatchControls('rgb', dom.rgbSwatches);
       modelManager.swatchControls('hsl', dom.hslSwatches);
       modelManager.inputControls('rgb', dom.rgbInputs);
+      modelManager.inputControls('rgb-hex', dom.rgbHexInputs);
       modelManager.inputControls('hsl', dom.hslInputs);
+      modelManager.createImportControls(dom.importControls);
       modelManager.currentSwatch(dom.colorSwatch);
 
       // Tab switching logic
@@ -307,7 +295,7 @@
         hslCylinder.setPlotSetting('b', dom.bPlotToggle.checked);
       });
 
-      // Import data event
+      /* Import data event
       dom.importData.addEventListener('click', async () => {
         dom.error.textContent = '';
         let content = '';
@@ -365,7 +353,7 @@
         dom.importUrl.value = '';
         dom.fileInput.value = '';
       });
-
+*/
       // Start animation
       modelManager.animate();
     });

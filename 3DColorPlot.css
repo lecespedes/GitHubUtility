@@ -152,78 +152,13 @@
       display: block;
     }
 
-    .axis-swatches {
-      margin-top: 0.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .axis-swatch-group {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      position: relative;
-    }
-
-    .axis-swatch-group label {
-      font-size: 0.9rem;
-      font-weight: bold;
-      width: 20px;
-    }
-
-    .swatch-line {
-      display: flex;
-      flex-wrap: nowrap;
-      position: relative;
-    }
-
-    .swatch {
-      height: 1rem;
-      cursor: pointer;
-      border-right: 1px solid #f5f5f5;
-      position: relative;
-    }
-
-    .caret {
-      position: absolute;
-      top: 1rem;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-left: 5px solid transparent;
-      border-right: 5px solid transparent;
-      border-bottom: 5px solid #333;
-      transform: translateX(-50%);
-      display: none;
-    }
-
+   
     .input-container {
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
       justify-content: center;
       margin-top: 1rem;
-    }
-
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      text-align: center;
-    }
-
-    .input-group label {
-      font-size: 0.9rem;
-      font-weight: bold;
-    }
-
-    .input-group input[type="text"],
-    .input-group input[type="file"] {
-      width: 200px;
-      padding: 0.5rem;
-      border: 1px solid #aaa;
-      border-radius: 4px;
-      font-size: 0.9rem;
     }
 
     #colorSwatch {
@@ -259,10 +194,6 @@
 
     .controls button:hover {
       background: #ddd;
-    }
-   .error {
-      color: red;
-      font-size: 0.9rem;
     }
     .symbols{
       font-family: 'Segoe UI Symbol', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
